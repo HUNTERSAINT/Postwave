@@ -1,0 +1,439 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
+import {
+  ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, AtSign, Check, CheckCircle2,
+  ChevronDown, CircleAlert, Clock3, ExternalLink, FileImage, Globe2, ImagePlus,
+  Instagram, Link2, LoaderCircle, LogOut, Menu, MessageCircle, Music2, Plus, RefreshCw,
+  Send, Settings2, ShieldCheck, Sparkles, Trash2, UploadCloud, X,
+  Video,
+} from "lucide-react";
+
+type Account = { id: string; platform: string; username?: string; displayName?: string; isActive: boolean };
+type MediaAsset = { id: string; key: string; publicUrl: string; contentType: string; size: number };
+type Target = { platform: string; accountId: string; status: string; errorMessage?: string | null; platformPostUrl?: string | null };
+type Post = { id: string; content: string; status: string; createdAt: string; platforms?: Target[] };
+type User = { id: string; email: string; name?: string };
+type ApiError = { message?: string };
+
+const platforms = ["instagram", "facebook", "threads", "linkedin", "twitter", "tiktok", "youtube", "pinterest", "reddit", "bluesky", "googlebusiness", "telegram", "discord", "slack", "whatsapp"];
+const platformNames: Record<string, string> = {
+  instagram: "Instagram", facebook: "Facebook", threads: "Threads", linkedin: "LinkedIn", twitter: "X", tiktok: "TikTok",
+  youtube: "YouTube", pinterest: "Pinterest", reddit: "Reddit", bluesky: "Bluesky", googlebusiness: "Google Business",
+  telegram: "Telegram", discord: "Discord", slack: "Slack", whatsapp: "WhatsApp",
+};
+
+async function api<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...init,
+    credentials: "include",
+    headers: { ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...init?.headers },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((payload as ApiError).message || `Request failed (${response.status})`);
+  return payload as T;
+}
+function json(body: unknown): RequestInit { return { method: "POST", body: JSON.stringify(body) }; }
+function Brand({ compact = false }: { compact?: boolean }) {
+  return <a href="/dashboard" className="inline-flex items-center gap-2.5" aria-label="Postwave home">
+    <svg className="wave-mark h-9 w-9" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <rect width="40" height="40" rx="12" fill="#176F98" />
+      <path d="M7 16.5C11.3 16.5 11.3 23.5 15.6 23.5C19.9 23.5 19.9 16.5 24.2 16.5C28.5 16.5 28.5 23.5 32.8 23.5" stroke="#D6FBF1" strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M7 25.5C10.3 25.5 10.8 30 14.3 30C17.8 30 18.3 25.5 21.8 25.5" stroke="#59D2BD" strokeWidth="2.3" strokeLinecap="round" />
+    </svg>
+    {!compact && <span className="font-display text-[19px] font-extrabold tracking-[-.06em] text-[#17364c]">postwave</span>}
+  </a>;
+}
+function Footer() {
+  return <footer className="mt-auto border-t border-[#e2ecef] px-5 py-5 text-center text-xs text-[#8093a0]">Postwave by Mazi Saint Concepts.</footer>;
+}
+function Notice({ children, tone = "error" }: { children: ReactNode; tone?: "error" | "success" | "info" }) {
+  const colors = tone === "success" ? "border-[#b9e4d9] bg-[#effaf6] text-[#246c5b]" : tone === "info" ? "border-[#cfe3eb] bg-[#f0f8fb] text-[#346a80]" : "border-[#f0c9c1] bg-[#fff5f2] text-[#a34c3d]";
+  return <div role="status" className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm ${colors}`}><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" /> <span>{children}</span></div>;
+}
+function Button({ children, className = "", variant = "primary", disabled = false, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" }) {
+  const styles = variant === "primary" ? "bg-[#176f98] text-white hover:bg-[#125c7d] shadow-[0_4px_10px_rgba(25,104,139,.12)]" : variant === "secondary" ? "border border-[#d8e6eb] bg-white text-[#36576b] hover:bg-[#f4fafb]" : "text-[#5e7788] hover:bg-[#edf5f6]";
+  return <button {...props} disabled={disabled} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}>{children}</button>;
+}
+function Field({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return <label className="grid gap-1.5 text-sm font-semibold text-[#355367]">{label}<input {...props} className={`h-11 w-full rounded-xl border border-[#dce7eb] bg-white px-3.5 text-sm font-normal text-[#183348] outline-none transition focus:border-[#4eabb3] focus:ring-4 focus:ring-[#dff3ef] placeholder:text-[#9aabb4] ${props.className || ""}`} /></label>;
+}
+function PageTitle({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
+  return <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+    <div>{eyebrow && <div className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-[#388b91]">{eyebrow}</div>}<h1 className="font-display text-3xl font-extrabold tracking-[-.045em] text-[#17364c] sm:text-[34px]">{title}</h1>{description && <p className="mt-2 max-w-2xl text-sm leading-6 text-[#718696]">{description}</p>}</div>
+    {action}
+  </div>;
+}
+function EmptyState({ icon: Icon, title, detail, action }: { icon: typeof ImagePlus; title: string; detail: string; action?: ReactNode }) {
+  return <div className="flex min-h-[250px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#cbdde3] bg-[#f8fbfc] px-6 text-center">
+    <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e6f4f2] text-[#348d8a]"><Icon className="h-5 w-5" /></span>
+    <h3 className="font-display text-base font-bold text-[#234459]">{title}</h3><p className="mt-1.5 max-w-sm text-sm leading-5 text-[#7a8e9b]">{detail}</p>{action && <div className="mt-5">{action}</div>}
+  </div>;
+}
+function StatusPill({ status }: { status?: string }) {
+  const value = (status || "unknown").toLowerCase();
+  const style = value === "published" || value === "success" ? "bg-[#e5f5ef] text-[#347961]" : value === "failed" || value === "error" ? "bg-[#fff0ed] text-[#a75245]" : value === "publishing" || value === "pending" ? "bg-[#fff6df] text-[#96712a]" : "bg-[#edf2f4] text-[#657b88]";
+  return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold capitalize ${style}`}>{value.replaceAll("_", " ")}</span>;
+}
+function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <section className={`rounded-2xl border border-[#e0eaed] bg-white shadow-[0_8px_26px_rgba(30,74,92,.035)] ${className}`}>{children}</section>;
+}
+function Skeleton({ className = "" }: { className?: string }) { return <div className={`animate-pulse rounded-lg bg-[#e7eff2] ${className}`} />; }
+
+function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState("");
+  const [token, setToken] = useState("");
+  useEffect(() => { setToken(new URLSearchParams(window.location.search).get("token") || ""); }, []);
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setBusy(true); setMessage(""); setSuccess("");
+    const data = new FormData(event.currentTarget);
+    const email = String(data.get("email") || "");
+    try {
+      if (path === "/login") {
+        await api("/api/auth/login", json({ email, password: String(data.get("password") || "") }));
+        onAuth(); window.location.href = "/dashboard";
+      } else if (path === "/signup") {
+        const response = await api<{ message?: string }>("/api/auth/signup", json({ email, password: String(data.get("password") || ""), name: String(data.get("name") || "") }));
+        setSuccess(response.message || "Your account is ready. Check your inbox for a verification link.");
+      } else if (path === "/verify-email") {
+        const confirmationToken = String(data.get("token") || token);
+        await api("/api/auth/verify-email", json({ token: confirmationToken }));
+        setSuccess("Email confirmed. You can now sign in.");
+      } else if (path === "/forgot-password") {
+        const response = await api<{ message?: string }>("/api/auth/forgot-password", json({ email }));
+        setSuccess(response.message || "If an account exists for that email, reset instructions are on their way.");
+      } else {
+        const confirmationToken = String(data.get("token") || token);
+        await api("/api/auth/reset-password", json({ token: confirmationToken, password: String(data.get("password") || "") }));
+        setSuccess("Your password has been updated. Sign in with your new password.");
+      }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again."); }
+    finally { setBusy(false); }
+  };
+  const details: Record<string, { overline: string; title: string; copy: string; submit: string }> = {
+    "/login": { overline: "Welcome back", title: "Your next post starts here.", copy: "Sign in to pick up right where your audience is.", submit: "Sign in" },
+    "/signup": { overline: "A better way to publish", title: "Make every post go further.", copy: "Create your Postwave workspace and bring your channels together.", submit: "Create account" },
+    "/verify-email": { overline: "One last step", title: "Confirm your email.", copy: "Paste the verification token from your email to activate your account.", submit: "Verify email" },
+    "/forgot-password": { overline: "Account recovery", title: "Reset your password.", copy: "Enter your email and we'll send reset instructions if an account matches.", submit: "Send reset link" },
+    "/reset-password": { overline: "Account recovery", title: "Choose a new password.", copy: "Set a secure password to get back to publishing.", submit: "Update password" },
+  };
+  const d = details[path] || details["/login"];
+  const isToken = path === "/verify-email" || path === "/reset-password";
+  return <div className="flex min-h-[100dvh] flex-col bg-[#f5f9fa]">
+    <header className="flex h-[76px] items-center px-5 sm:px-10"><Brand /></header>
+    <main className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-5 pb-12 pt-4 md:grid-cols-[1fr_450px] md:px-10">
+      <div className="hidden max-w-xl md:block">
+        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8ebe9] bg-white/80 px-3 py-1.5 text-xs font-semibold text-[#428982]"><span className="h-1.5 w-1.5 rounded-full bg-[#3bb7a3]" /> Your channels, in sync</div>
+        <h1 className="font-display text-[54px] font-extrabold leading-[1.08] tracking-[-.055em] text-[#193a50]">One post.<br /><span className="text-[#19799a]">Everywhere</span> it matters.</h1>
+        <p className="mt-5 max-w-md text-base leading-7 text-[#718696]">A quieter, clearer way to publish across the social accounts you own.</p>
+        <div className="relative mt-12 max-w-md overflow-hidden rounded-[28px] border border-[#d8e8eb] bg-[#eaf5f5] p-6">
+          <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full border-[32px] border-white/50" /><div className="absolute -bottom-16 left-24 h-44 w-44 rounded-full border-[25px] border-[#cce9e6]/70" />
+          <div className="relative rounded-2xl border border-white bg-white/90 p-4 shadow-[0_18px_40px_rgba(36,91,108,.09)]">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#35596d]"><Brand compact /> <span>Compose once</span><ArrowRight className="ml-auto h-4 w-4 text-[#7a9da9]" /></div>
+            <div className="mt-4 h-2 w-4/5 rounded-full bg-[#e5eef1]" /><div className="mt-2 h-2 w-3/5 rounded-full bg-[#e5eef1]" />
+            <div className="mt-5 flex gap-2">{["IG", "in", "X"].map((item) => <span key={item} className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#edf7f5] text-[10px] font-bold text-[#358a83]">{item}</span>)}<span className="ml-auto flex items-center gap-1 text-[11px] font-bold text-[#39877f]"><Check className="h-3.5 w-3.5" /> Ready to publish</span></div>
+          </div>
+        </div>
+      </div>
+      <Card className="mx-auto w-full max-w-[450px] p-6 sm:p-9">
+        <div className="mb-7 md:hidden"><Brand /></div>
+        <p className="text-[11px] font-bold uppercase tracking-[.16em] text-[#378c8a]">{d.overline}</p>
+        <h2 className="font-display mt-2 text-[27px] font-extrabold leading-tight tracking-[-.04em] text-[#1b3b50]">{d.title}</h2>
+        <p className="mt-2 text-sm leading-6 text-[#778b98]">{d.copy}</p>
+        <form onSubmit={submit} className="mt-7 grid gap-4">
+          {path === "/signup" && <Field label="Your name" name="name" placeholder="Name as your audience knows you" autoComplete="name" required />}
+          {(path === "/login" || path === "/signup" || path === "/forgot-password") && <Field label="Email address" name="email" type="email" placeholder="you@example.com" autoComplete="email" required />}
+          {isToken && <Field label="Email token" name="token" value={token} onChange={(event) => setToken(event.target.value)} placeholder="Paste the token from your email" required />}
+          {(path === "/login" || path === "/signup" || path === "/reset-password") && <Field label="Password" name="password" type="password" placeholder={path === "/login" ? "Your password" : "At least 8 characters"} autoComplete={path === "/login" ? "current-password" : "new-password"} minLength={8} required />}
+          {message && <Notice>{message}</Notice>}{success && <Notice tone="success">{success}</Notice>}
+          <Button type="submit" disabled={busy} className="mt-1 w-full">{busy && <LoaderCircle className="h-4 w-4 animate-spin" />}{d.submit}<ArrowRight className="h-4 w-4" /></Button>
+        </form>
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-[#758a97]">
+          {path === "/login" && <><a className="font-semibold text-[#227a91] hover:underline" href="/forgot-password">Forgot password?</a><span>New to Postwave? <a className="font-bold text-[#227a91] hover:underline" href="/signup">Create account</a></span></>}
+          {path === "/signup" && <span>Already have an account? <a className="font-bold text-[#227a91] hover:underline" href="/login">Sign in</a></span>}
+          {path === "/verify-email" && <span>Need a new account? <a className="font-bold text-[#227a91] hover:underline" href="/signup">Sign up</a></span>}
+          {(path === "/forgot-password" || path === "/reset-password") && <a className="inline-flex items-center gap-1 font-semibold text-[#227a91] hover:underline" href="/login"><ArrowLeft className="h-3.5 w-3.5" /> Back to sign in</a>}
+        </div>
+      </Card>
+    </main><Footer />
+  </div>;
+}
+
+function AppFrame({ user, onLogout, children }: { user: User; onLogout: () => void; children: ReactNode }) {
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }];
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "/dashboard";
+  return <div className="min-h-[100dvh] bg-[#f5f9fa]">
+    <header className="sticky top-0 z-20 border-b border-[#e0eaed] bg-[#f9fcfc]/95 backdrop-blur">
+      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-7 lg:px-10">
+        <div className="flex items-center gap-9"><Brand /><nav className="hidden items-center gap-1 md:flex">{items.map(({ href, label, icon: Icon }) => <a key={href} href={href} className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-semibold transition ${pathname === href ? "bg-[#e6f3f2] text-[#216f79]" : "text-[#718695] hover:bg-[#edf5f6] hover:text-[#35576b]"}`}><Icon className="h-4 w-4" />{label}</a>)}</nav></div>
+        <div className="flex items-center gap-2.5">
+          <a href="/accounts" className="hidden items-center gap-2 rounded-xl border border-[#d9e7eb] bg-white px-3 py-2 text-xs font-semibold text-[#48677a] sm:flex"><Settings2 className="h-4 w-4" /> Manage accounts</a>
+          <div className="hidden h-8 w-px bg-[#e2eaed] sm:block" />
+          <div className="hidden text-right sm:block"><div className="max-w-40 truncate text-xs font-bold text-[#315064]">{user.name || user.email.split("@")[0]}</div><div className="max-w-40 truncate text-[10px] text-[#8b9ba5]">{user.email}</div></div>
+          <button onClick={onLogout} title="Sign out" className="flex h-9 w-9 items-center justify-center rounded-xl text-[#78909c] hover:bg-[#eaf2f4] hover:text-[#31576b]"><LogOut className="h-4 w-4" /></button>
+          <button onClick={() => setMobileMenu(!mobileMenu)} aria-label="Toggle navigation" className="flex h-9 w-9 items-center justify-center rounded-xl text-[#64808e] hover:bg-[#eaf2f4] md:hidden">{mobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+        </div>
+      </div>
+      {mobileMenu && <nav className="grid grid-cols-2 gap-2 border-t border-[#e0eaed] p-3 md:hidden">{items.map(({ href, label, icon: Icon }) => <a key={href} href={href} className={`flex items-center gap-2 rounded-xl p-3 text-sm font-semibold ${pathname === href ? "bg-[#e6f3f2] text-[#216f79]" : "text-[#647d8a]"}`}><Icon className="h-4 w-4" />{label}</a>)}</nav>}
+    </header>
+    <main className="mx-auto min-h-[calc(100dvh-137px)] max-w-[1240px] px-4 pb-12 pt-8 sm:px-7 lg:px-10"><div className="page-in">{children}</div></main>
+    <Footer />
+  </div>;
+}
+
+function Dashboard() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const refresh = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const [postResult, accountResult] = await Promise.all([api<{ posts: Post[] }>("/api/posts"), api<{ accounts: Account[] }>("/api/accounts")]);
+      setPosts(postResult.posts || []); setAccounts(accountResult.accounts || []);
+    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't load your overview."); } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
+  const publishedCount = posts.filter((post) => post.status === "published").length;
+  return <>
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div><p className="mb-2 text-xs font-bold uppercase tracking-[.15em] text-[#438e8b]">Your workspace</p><h1 className="font-display text-3xl font-extrabold tracking-[-.05em] text-[#193a50] sm:text-[36px]">Good to see you.</h1><p className="mt-2 text-sm text-[#778b98]">One clear place to publish across your channels.</p></div>
+      <a href="/compose" className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#176f98] px-4 text-sm font-bold text-white shadow-[0_4px_10px_rgba(25,104,139,.12)] hover:bg-[#125c7d]"><Plus className="h-4 w-4" /> Create a post</a>
+    </div>
+    {error && <div className="mb-5 flex items-center justify-between gap-3"><Notice>{error}</Notice><Button variant="secondary" onClick={() => void refresh()}><RefreshCw className="h-4 w-4" />Retry</Button></div>}
+    <div className="grid gap-4 sm:grid-cols-3">
+      {[{ label: "Connected accounts", value: accounts.length, icon: Link2, tint: "bg-[#e6f4f1] text-[#398b81]" }, { label: "Posts created", value: posts.length, icon: Send, tint: "bg-[#e9f1f9] text-[#467aa2]" }, { label: "Published", value: publishedCount, icon: CheckCircle2, tint: "bg-[#eff5e9] text-[#6f8f4b]" }].map((stat) => <Card key={stat.label} className="flex items-center gap-4 p-5">
+        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.tint}`}><stat.icon className="h-5 w-5" /></span><div><div className="text-[11px] font-bold uppercase tracking-[.1em] text-[#8699a3]">{stat.label}</div>{loading ? <Skeleton className="mt-2 h-6 w-12" /> : <div className="font-display mt-1 text-2xl font-extrabold tracking-[-.04em] text-[#29495c]">{stat.value}</div>}</div>
+      </Card>)}
+    </div>
+    <div className="mt-6 grid gap-5 lg:grid-cols-[1.55fr_.85fr]">
+      <Card>
+        <div className="flex items-center justify-between border-b border-[#e7eef0] px-5 py-4"><div><h2 className="font-display font-bold text-[#29495c]">Recent posts</h2><p className="mt-0.5 text-xs text-[#8496a0]">Your latest publishing activity</p></div><a href="/history" className="text-xs font-bold text-[#287c91] hover:underline">View history <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></a></div>
+        <div className="divide-y divide-[#edf2f3] px-5">
+          {loading ? <div className="grid gap-4 py-5">{[1, 2, 3].map((n) => <Skeleton key={n} className="h-12 w-full" />)}</div> : posts.length ? posts.slice(0, 5).map((post) => <a href="/history" key={post.id} className="flex items-start gap-3 py-4 hover:bg-[#fbfdfd]">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#edf5f6] text-[#528491]"><Send className="h-4 w-4" /></span>
+            <div className="min-w-0 flex-1"><p className="line-clamp-2 text-sm leading-5 text-[#3a586a]">{post.content || "Media post"}</p><div className="mt-1.5 text-[11px] text-[#8a9aa4]">{new Date(post.createdAt).toLocaleString()}</div></div><StatusPill status={post.status} />
+          </a>) : !error && <div className="py-4"><EmptyState icon={Send} title="Your first post starts here" detail="Write once, choose your connected accounts, and publish." action={<a href="/compose" className="text-sm font-bold text-[#267b8c]">Start composing <ArrowRight className="ml-1 inline h-4 w-4" /></a>} /></div>}
+        </div>
+      </Card>
+      <div className="grid content-start gap-5">
+        <Card className="overflow-hidden bg-[#eaf5f4] p-5">
+          <div className="mb-5 flex items-start justify-between"><div><span className="text-[11px] font-bold uppercase tracking-[.15em] text-[#478f8a]">Your workflow</span><h2 className="font-display mt-2 text-xl font-extrabold tracking-[-.03em] text-[#1e4657]">From draft to<br />everywhere.</h2></div><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#398f8a]"><Sparkles className="h-5 w-5" /></span></div>
+          <div className="grid gap-2 text-xs font-semibold text-[#57767f]"><div className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#3c958c]"><Check className="h-3 w-3" /></span> Connect the accounts you own</div><div className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#3c958c]">2</span> Write your post once</div><div className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#3c958c]">3</span> Publish to your channels</div></div>
+          <a href="/accounts" className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-[#267b83] hover:underline">Set up accounts <ArrowRight className="h-3.5 w-3.5" /></a>
+        </Card>
+        <Card className="p-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Connected accounts</h2><p className="mt-1 text-xs text-[#8798a1]">Ready when you are</p></div><a href="/accounts" className="text-xs font-bold text-[#287c91]">Manage</a></div>
+          {loading ? <Skeleton className="h-10 w-full" /> : accounts.length ? <div className="flex flex-wrap gap-2">{accounts.slice(0, 6).map((account) => <span key={account.id} title={account.username || platformNames[account.platform] || account.platform} className="inline-flex items-center gap-1.5 rounded-full border border-[#e2ebed] bg-[#f9fcfc] px-2.5 py-1.5 text-[11px] font-semibold text-[#547082]"><span className="h-1.5 w-1.5 rounded-full bg-[#43b49e]" />{platformNames[account.platform] || account.platform}</span>)}{accounts.length > 6 && <span className="px-1 py-1.5 text-[11px] text-[#8496a0]">+{accounts.length - 6} more</span>}</div> : <p className="text-sm text-[#8798a1]">No accounts connected yet.</p>}
+        </Card>
+      </div>
+    </div>
+  </>;
+}
+
+function AccountsPage() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState("");
+  const [notice, setNotice] = useState("");
+  const refresh = useCallback(async () => {
+    setLoading(true); setError("");
+    try { const result = await api<{ accounts: Account[] }>("/api/accounts"); setAccounts(result.accounts || []); }
+    catch (e) { setError(e instanceof Error ? e.message : "Couldn't load connected accounts."); } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
+  const connect = async (platform: string) => {
+    setBusy(platform); setError(""); setNotice("");
+    try {
+      const result = await api<{ authUrl: string }>("/api/accounts/connect", json({ platform }));
+      if (!result.authUrl) throw new Error("The connection link was not returned.");
+      window.location.assign(result.authUrl);
+    } catch (e) { setError(e instanceof Error ? e.message : `Couldn't connect ${platformNames[platform]}.`); setBusy(""); }
+  };
+  const disconnect = async (account: Account) => {
+    if (!window.confirm(`Disconnect ${account.displayName || account.username || platformNames[account.platform] || account.platform}?`)) return;
+    setBusy(account.id); setError(""); setNotice("");
+    try { await api(`/api/accounts/${encodeURIComponent(account.id)}`, { method: "DELETE" }); setNotice("Account disconnected."); await refresh(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Couldn't disconnect account."); } finally { setBusy(""); }
+  };
+  return <>
+    <PageTitle eyebrow="Your channels" title="Connected accounts" description="Connect your own social identities. Every account stays yours, and only you can publish to it." />
+    {error && <div className="mb-4"><Notice>{error}</Notice></div>}{notice && <div className="mb-4"><Notice tone="success">{notice}</Notice></div>}
+    <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
+      <Card>
+        <div className="flex items-center justify-between border-b border-[#e7eef0] px-5 py-4"><div><h2 className="font-display font-bold text-[#29495c]">Your connected identities</h2><p className="mt-1 text-xs text-[#8798a1]">Only active accounts can receive new posts.</p></div><Button variant="secondary" onClick={() => void refresh()} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button></div>
+        <div className="p-5">
+          {loading ? <div className="grid gap-3">{[1, 2].map((n) => <Skeleton className="h-[76px] w-full" key={n} />)}</div> : accounts.length ? <div className="grid gap-3">{accounts.map((account) => <div key={account.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[#e4ecef] bg-[#fbfdfd] p-3.5">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f4f2] text-[#3c8e87]"><PlatformIcon platform={account.platform} /></span>
+            <div className="min-w-0 flex-1"><div className="font-semibold text-[#355569]">{account.displayName || platformNames[account.platform] || account.platform}</div><div className="mt-0.5 truncate text-xs text-[#82949f]">{account.username ? `@${account.username.replace(/^@/, "")}` : platformNames[account.platform] || account.platform}</div></div>
+            <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${account.isActive ? "bg-[#e7f5ed] text-[#42805d]" : "bg-[#f0f2f2] text-[#7d8d93]"}`}>{account.isActive ? "Active" : "Inactive"}</span>
+            <button onClick={() => void disconnect(account)} disabled={busy === account.id} aria-label="Disconnect account" className="flex h-9 w-9 items-center justify-center rounded-lg text-[#a27978] hover:bg-[#fff0ed] disabled:opacity-50">{busy === account.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}</button>
+          </div>)}</div> : !error && <EmptyState icon={Link2} title="No accounts connected" detail="Connect a social account to choose it as a destination for your next post." />}
+        </div>
+      </Card>
+      <Card className="p-5 sm:p-6"><div className="mb-4"><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e5f3f0] text-[#348b83]"><Plus className="h-5 w-5" /></div><h2 className="font-display mt-4 text-lg font-bold text-[#29495c]">Connect a platform</h2><p className="mt-1 text-sm leading-5 text-[#82949f]">You'll be redirected to authorize Postwave. We never ask for your social password.</p></div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">{platforms.map((platform) => <button key={platform} onClick={() => void connect(platform)} disabled={Boolean(busy)} className="flex min-h-11 items-center gap-2.5 rounded-xl border border-[#e0eaed] bg-white px-3 text-left text-xs font-semibold text-[#476477] transition hover:border-[#a9d4d2] hover:bg-[#f6fbfa] disabled:opacity-50">
+          <PlatformIcon platform={platform} /><span className="flex-1">{platformNames[platform]}</span>{busy === platform ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <ArrowUpRight className="h-3.5 w-3.5 text-[#90a4ac]" />}
+        </button>)}</div>
+        <div className="mt-5 flex items-start gap-2 rounded-xl bg-[#f4f8f8] p-3 text-[11px] leading-5 text-[#748b96]"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#45988a]" />You choose which profiles to connect, and can remove them whenever you like.</div>
+      </Card>
+    </div>
+  </>;
+}
+function PlatformIcon({ platform }: { platform: string }) {
+  if (platform === "instagram") return <Instagram className="h-4 w-4" />;
+  if (platform === "threads" || platform === "reddit") return <MessageCircle className="h-4 w-4" />;
+  if (platform === "linkedin") return <span className="text-xs font-extrabold">in</span>;
+  if (platform === "twitter" || platform === "bluesky") return <AtSign className="h-4 w-4" />;
+  if (platform === "youtube") return <Video className="h-4 w-4" />;
+  if (platform === "tiktok") return <Music2 className="h-4 w-4" />;
+  return <Globe2 className="h-4 w-4" />;
+}
+
+function ComposePage() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountsError, setAccountsError] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [content, setContent] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [assets, setAssets] = useState<MediaAsset[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const activeAccounts = useMemo(() => accounts.filter((account) => account.isActive), [accounts]);
+  const selectedAccounts = useMemo(() => activeAccounts.filter((account) => selected.includes(account.id)), [activeAccounts, selected]);
+  const refreshAccounts = useCallback(async () => {
+    setAccountsLoading(true); setAccountsError("");
+    try { const result = await api<{ accounts: Account[] }>("/api/accounts"); const list = result.accounts || []; setAccounts(list); }
+    catch (e) { setAccountsError(e instanceof Error ? e.message : "Couldn't load your accounts."); } finally { setAccountsLoading(false); }
+  }, []);
+  useEffect(() => { void refreshAccounts(); }, [refreshAccounts]);
+  const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  const uploadFiles = async (fileList: FileList | null) => {
+    if (!fileList?.length) return;
+    setUploading(true); setError(""); setNotice("");
+    try {
+      const nextAssets = [...assets];
+      for (const file of Array.from(fileList)) {
+        const signed = await api<{ uploadUrl: string; key: string; publicUrl: string; headers: Record<string, string> }>("/api/media/upload-url", json({ name: file.name, contentType: file.type, size: file.size }));
+        const response = await fetch(signed.uploadUrl, { method: "PUT", headers: signed.headers, body: file });
+        if (!response.ok) throw new Error(`Upload failed for ${file.name}.`);
+        const completed = await api<{ media: MediaAsset }>("/api/media/complete", json({ key: signed.key }));
+        nextAssets.push(completed.media);
+      }
+      setAssets(nextAssets); setFiles((current) => [...current, ...Array.from(fileList)]); setNotice("Media uploaded and ready to publish.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't upload your media."); }
+    finally { setUploading(false); }
+  };
+  const removeFile = (index: number) => { setFiles((current) => current.filter((_, i) => i !== index)); setAssets((current) => current.filter((_, i) => i !== index)); };
+  const publish = async () => {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      await api("/api/posts", json({ content, accountIds: selected, mediaAssetIds: assets.map((asset) => asset.id) }));
+      setNotice("Your post was sent. Check History for the result on each platform."); setContent(""); setSelected([]); setFiles([]); setAssets([]);
+    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't publish your post."); }
+    finally { setBusy(false); }
+  };
+  const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void publish(); };
+  const chooseFiles = (event: ChangeEvent<HTMLInputElement>) => { void uploadFiles(event.target.files); event.target.value = ""; };
+  return <>
+    <PageTitle eyebrow="Make it yours" title="Compose a post" description="Write it once, choose your destinations, then publish now." />
+    <form onSubmit={submit} className="grid items-start gap-5 lg:grid-cols-[1.15fr_.85fr]">
+      <div className="grid gap-5">
+        <Card className="p-5 sm:p-6">
+          <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Your message</h2><p className="mt-1 text-xs text-[#8798a1]">A shared post caption for selected platforms.</p></div><span className="text-xs font-semibold text-[#80939c]">{content.length} characters</span></div>
+          <textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={5000} rows={7} placeholder="What would you like to share?" className="w-full resize-y rounded-xl border border-[#dce7eb] bg-[#fbfdfd] p-4 text-sm leading-6 text-[#29495c] outline-none placeholder:text-[#a0afb6] focus:border-[#4eabb3] focus:ring-4 focus:ring-[#dff3ef]" />
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#8798a1]"><span>Keep your copy clear across every channel.</span><span>Up to 5,000 characters</span></div>
+        </Card>
+        <Card className="p-5 sm:p-6">
+          <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Media</h2><p className="mt-1 text-xs text-[#8798a1]">Attach images or video to your post.</p></div><span className="text-[11px] text-[#8b9ba3]">{files.length} attached</span></div>
+          <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="sr-only" onChange={chooseFiles} id="post-media" />
+          <label htmlFor="post-media" className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#bfd5db] bg-[#f8fbfc] px-5 py-7 text-center transition hover:border-[#77b8b7] hover:bg-[#f2faf8]">
+            <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e5f3f0] text-[#3d9288]">{uploading ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}</span><span className="text-sm font-bold text-[#456477]">{uploading ? "Uploading media…" : "Choose images or videos"}</span><span className="mt-1 text-xs text-[#899aa3]">Select files from your device</span>
+          </label>
+          {files.length > 0 && <div className="mt-3 grid gap-2">{files.map((file, index) => <div key={`${file.name}-${index}`} className="flex items-center gap-3 rounded-xl border border-[#e4ecef] px-3 py-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#edf5f6] text-[#5b8996]">{file.type.startsWith("image/") ? <FileImage className="h-4 w-4" /> : <ArrowDownToLine className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><div className="truncate text-xs font-semibold text-[#466476]">{file.name}</div><div className="mt-0.5 text-[10px] text-[#8a9ba3]">{(file.size / 1024 / 1024).toFixed(1)} MB · uploaded</div></div><button type="button" onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8799a1] hover:bg-[#fff0ed] hover:text-[#a75245]"><X className="h-4 w-4" /></button>
+          </div>)}</div>}
+        </Card>
+      </div>
+      <div className="grid gap-5">
+        <Card className="p-5 sm:p-6">
+          <div className="mb-4 flex items-start justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Publish to</h2><p className="mt-1 text-xs text-[#8798a1]">Select one or more active accounts.</p></div><span className="rounded-full bg-[#e7f4f1] px-2.5 py-1 text-[11px] font-bold text-[#448a80]">{selected.length} selected</span></div>
+          {accountsLoading ? <div className="grid gap-2">{[1, 2, 3].map((n) => <Skeleton key={n} className="h-12 w-full" />)}</div> : accountsError ? <div className="grid gap-3"><Notice>{accountsError}</Notice><Button type="button" variant="secondary" onClick={() => void refreshAccounts()}><RefreshCw className="h-4 w-4" />Retry</Button></div> : activeAccounts.length ? <div className="grid max-h-[290px] gap-2 overflow-auto pr-1 scrollbar-thin">{activeAccounts.map((account) => <label key={account.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${selected.includes(account.id) ? "border-[#9ed0c8] bg-[#f1faf7]" : "border-[#e5edef] hover:bg-[#fafcfc]"}`}>
+            <input type="checkbox" checked={selected.includes(account.id)} onChange={() => toggle(account.id)} className="h-4 w-4 accent-[#238c8d]" /><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#edf5f5] text-[#578993]"><PlatformIcon platform={account.platform} /></span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-[#486779]">{account.displayName || platformNames[account.platform] || account.platform}</span><span className="mt-0.5 block truncate text-[10px] text-[#8a9aa3]">{account.username ? `@${account.username.replace(/^@/, "")}` : platformNames[account.platform] || account.platform}</span></span>{selected.includes(account.id) && <CheckCircle2 className="h-4 w-4 text-[#3d9b8c]" />}
+          </label>)}</div> : <EmptyState icon={Link2} title="Connect an account first" detail="Your connected accounts will appear here as publishing destinations." action={<a href="/accounts" className="text-sm font-bold text-[#267b8c]">Go to accounts <ArrowRight className="ml-1 inline h-4 w-4" /></a>} />}
+        </Card>
+        <Card className="p-5 sm:p-6">
+          <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Platform preview</h2><p className="mt-1 text-xs text-[#8798a1]">Preview is based on the selected accounts.</p></div><ChevronDown className="h-4 w-4 text-[#8a9ba3]" /></div>
+          {selectedAccounts.length ? <div className="grid gap-3">{selectedAccounts.map((account) => <div key={account.id} className="rounded-xl border border-[#e5edef] bg-[#fbfdfd] p-3.5"><div className="mb-2 flex items-center gap-2"><span className="text-[#568994]"><PlatformIcon platform={account.platform} /></span><span className="text-xs font-bold text-[#4b687a]">{platformNames[account.platform] || account.platform}</span><span className="ml-auto text-[10px] text-[#8999a2]">{content.length} characters</span></div><p className="whitespace-pre-wrap break-words text-xs leading-5 text-[#6d8390]">{content || "Your post text will appear here."}</p>{content.length === 0 && <p className="mt-2 text-[10px] text-[#a0afb5]">Write a caption to preview the post.</p>}</div>)}</div> : <div className="rounded-xl border border-dashed border-[#d5e3e6] bg-[#f9fbfb] px-4 py-6 text-center text-xs text-[#8798a1]">Select accounts to see a preview and character count.</div>}
+          <p className="mt-3 text-[10px] leading-4 text-[#92a0a7]">Platform-specific formatting may vary. No extra platform restrictions are available from the current API.</p>
+        </Card>
+        {error && <Notice>{error}</Notice>}{notice && <Notice tone="success">{notice}</Notice>}
+        <Button type="submit" disabled={busy || uploading || accountsLoading || !content.trim() || !selected.length || Boolean(accountsError)} className="h-12 w-full text-sm">{busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{busy ? "Publishing…" : "Publish now"}<ArrowRight className="ml-auto h-4 w-4" /></Button>
+        <p className="text-center text-[11px] text-[#8b9ba3]">Your post will be sent to the selected accounts right away.</p>
+      </div>
+    </form>
+  </>;
+}
+
+function HistoryPage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState("");
+  const [notice, setNotice] = useState("");
+  const refresh = useCallback(async () => {
+    setLoading(true); setError("");
+    try { const result = await api<{ posts: Post[] }>("/api/posts"); setPosts(result.posts || []); }
+    catch (e) { setError(e instanceof Error ? e.message : "Couldn't load post history."); } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
+  const retry = async (postId: string, accountId: string) => {
+    const key = `${postId}:${accountId}`; setBusy(key); setError(""); setNotice("");
+    try { await api(`/api/posts/${encodeURIComponent(postId)}/retry`, json({ accountId })); setNotice("Retry requested. The platform status will update when publishing completes."); await refresh(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Couldn't retry this platform."); } finally { setBusy(""); }
+  };
+  return <>
+    <PageTitle eyebrow="Publishing activity" title="Post history" description="See how each post performed on every connected platform. Failed destinations can be retried here." action={<Button variant="secondary" disabled={loading} onClick={() => void refresh()}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button>} />
+    {error && <div className="mb-4"><Notice>{error}</Notice></div>}{notice && <div className="mb-4"><Notice tone="success">{notice}</Notice></div>}
+    {loading ? <div className="grid gap-4">{[1, 2, 3].map((n) => <Card key={n} className="p-5"><Skeleton className="h-6 w-1/3" /><Skeleton className="mt-4 h-14 w-full" /></Card>)}</div> : posts.length ? <div className="grid gap-4">{posts.map((post) => <Card key={post.id} className="overflow-hidden">
+      <div className="flex flex-wrap items-start gap-3 border-b border-[#edf1f2] px-5 py-4"><div className="min-w-0 flex-1"><p className="line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-[#3f5d6e]">{post.content || "Media post"}</p><div className="mt-2 text-[11px] text-[#899aa3]">{new Date(post.createdAt).toLocaleString()}</div></div><StatusPill status={post.status} /></div>
+      <div className="divide-y divide-[#edf2f3] px-5">{post.platforms?.length ? post.platforms.map((target, index) => <div key={`${target.accountId}-${index}`} className="flex flex-wrap items-center gap-3 py-3.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#edf5f5] text-[#568994]"><PlatformIcon platform={target.platform} /></span>
+        <span className="text-xs font-bold text-[#4b687a]">{platformNames[target.platform] || target.platform}</span><StatusPill status={target.status} />
+        {target.errorMessage && <p className="order-last w-full pl-11 text-xs leading-5 text-[#a35b4e] sm:order-none sm:w-auto sm:flex-1">{target.errorMessage}</p>}
+        {target.platformPostUrl && <a target="_blank" rel="noreferrer" href={target.platformPostUrl} aria-label="Open published post" className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-[#6e91a0] hover:bg-[#eff6f7]"><ExternalLink className="h-4 w-4" /></a>}
+        {["failed", "error"].includes((target.status || "").toLowerCase()) && <Button variant="secondary" disabled={busy === `${post.id}:${target.accountId}`} onClick={() => void retry(post.id, target.accountId)} className="ml-auto min-h-8 px-3 text-xs">{busy === `${post.id}:${target.accountId}` ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}Retry</Button>}
+      </div>) : <p className="py-4 text-xs text-[#8a9aa3]">No per-platform results are available for this post.</p>}</div>
+    </Card>)}</div> : !error && <EmptyState icon={Clock3} title="Nothing published yet" detail="Once you publish a post, its delivery status for each platform will show up here." action={<a href="/compose" className="text-sm font-bold text-[#267b8c]">Compose a post <ArrowRight className="ml-1 inline h-4 w-4" /></a>} />}
+  </>;
+}
+
+export function PostwaveShell() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const path = typeof window === "undefined" ? "/" : window.location.pathname.replace(/\/$/, "") || "/";
+  const authRoutes = ["/login", "/signup", "/verify-email", "/forgot-password", "/reset-password"];
+  const protectedRoutes = ["/dashboard", "/accounts", "/compose", "/history", "/"];
+  useEffect(() => {
+    let live = true;
+    api<{ user: User | null }>("/api/auth/me").then((result) => { if (live) setUser(result.user); }).catch(() => { if (live) setUser(null); }).finally(() => { if (live) setAuthLoading(false); });
+    return () => { live = false; };
+  }, []);
+  const logout = async () => {
+    try { await api("/api/auth/logout", { method: "POST" }); } finally { setUser(null); window.location.href = "/login"; }
+  };
+  const refreshUser = () => { api<{ user: User | null }>("/api/auth/me").then((result) => setUser(result.user)).catch(() => setUser(null)); };
+  if (authRoutes.includes(path)) return <AuthPage path={path} onAuth={refreshUser} />;
+  if (!protectedRoutes.includes(path)) return <AuthPage path="/login" onAuth={refreshUser} />;
+  if (authLoading) return <div className="flex min-h-[100dvh] flex-col bg-[#f5f9fa]"><header className="h-[68px] px-5 py-4"><Brand /></header><main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-10"><Skeleton className="h-9 w-64" /><Skeleton className="mt-3 h-4 w-80" /><div className="mt-8 grid gap-4 sm:grid-cols-3"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div><Skeleton className="mt-6 h-64" /></main><Footer /></div>;
+  if (!user) return <AuthPage path="/login" onAuth={refreshUser} />;
+  const view = path === "/accounts" ? <AccountsPage /> : path === "/compose" ? <ComposePage /> : path === "/history" ? <HistoryPage /> : <Dashboard />;
+  return <AppFrame user={user} onLogout={() => void logout()}>{view}</AppFrame>;
+}

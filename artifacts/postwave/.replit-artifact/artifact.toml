@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Postwave"
+description = "A multi-user social publishing app by Mazi Saint Concepts. Connect each user's social accounts through Late (Zernio), compose posts, publish across platforms, and review publishing history."
+version = "1.0.0"
+id = "artifacts/postwave"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18243
+
+[services.development]
+run = "pnpm --filter @workspace/postwave run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/postwave", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/postwave/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18243"
+BASE_PATH = "/"
