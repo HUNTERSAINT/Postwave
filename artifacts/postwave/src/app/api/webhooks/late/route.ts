@@ -34,7 +34,8 @@ function statusFor(value?: string) {
   if (["published", "success", "completed"].includes(status)) return "published" as const;
   if (["failed", "error", "rejected"].includes(status)) return "failed" as const;
   if (["publishing", "processing"].includes(status)) return "publishing" as const;
-  if (["queued", "scheduled", "pending"].includes(status)) return "queued" as const;
+  if (status === "scheduled") return "scheduled" as const;
+  if (["queued", "pending"].includes(status)) return "queued" as const;
   return null;
 }
 

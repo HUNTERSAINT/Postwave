@@ -6,15 +6,16 @@ import {
   ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, AtSign, Check, CheckCircle2,
   ChevronDown, CircleAlert, Clock3, ExternalLink, FileImage, Globe2, ImagePlus,
   Instagram, Link2, LoaderCircle, LogOut, Menu, MessageCircle, Music2, Plus, RefreshCw,
-  Send, Settings2, ShieldCheck, Sparkles, Trash2, UploadCloud, X,
+  Send, Settings2, ShieldCheck, Sparkles, Trash2, UploadCloud, X, CalendarDays, ChevronLeft,
+  ChevronRight, FileText, Save, Clock,
   Video,
 } from "lucide-react";
 
 type Account = { id: string; platform: string; username?: string; displayName?: string; isActive: boolean };
-type MediaAsset = { id: string; key: string; publicUrl: string; contentType: string; size: number };
+type MediaAsset = { id: string; key?: string; publicUrl: string; contentType: string; size: number };
 type Target = { platform: string; accountId: string; status: string; errorMessage?: string | null; platformPostUrl?: string | null };
-type Post = { id: string; content: string; status: string; createdAt: string; platforms?: Target[] };
-type User = { id: string; email: string; name?: string };
+type Post = { id: string; content: string; status: string; createdAt: string; scheduledAt?: string | null; timezone?: string; platforms: Target[]; media?: MediaAsset[] };
+type User = { id: string; email: string; name?: string; timezone?: string };
 type ApiError = { message?: string };
 
 const platforms = ["instagram", "facebook", "threads", "linkedin", "twitter", "tiktok", "youtube", "pinterest", "reddit", "bluesky", "googlebusiness", "telegram", "discord", "slack", "whatsapp"];
@@ -44,11 +45,11 @@ function json(body: unknown): RequestInit { return { method: "POST", body: JSON.
 function Brand({ compact = false }: { compact?: boolean }) {
   return <a href="/dashboard" className="inline-flex items-center gap-2.5" aria-label="Postwave home">
     <svg className="wave-mark h-9 w-9" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <rect width="40" height="40" rx="12" fill="#751f3b" />
-      <path d="M7 16.5C11.3 16.5 11.3 23.5 15.6 23.5C19.9 23.5 19.9 16.5 24.2 16.5C28.5 16.5 28.5 23.5 32.8 23.5" stroke="#fff9f8" strokeWidth="3.2" strokeLinecap="round" />
-      <path d="M7 25.5C10.3 25.5 10.8 30 14.3 30C17.8 30 18.3 25.5 21.8 25.5" stroke="#e7a8b7" strokeWidth="2.3" strokeLinecap="round" />
+      <rect width="40" height="40" rx="12" fill="#176f98" />
+      <path d="M6 17C10.3 17 10.3 23 14.6 23C18.9 23 18.9 17 23.2 17C27.5 17 27.5 23 34 23" stroke="#f5ffff" strokeWidth="3" strokeLinecap="round" />
+      <path d="M7 26C11 26 11 30 15 30C19 30 19 26 23 26C27 26 27 30 33 30" stroke="#9ce1d8" strokeWidth="2.4" strokeLinecap="round" />
     </svg>
-    {!compact && <span className="font-display text-[19px] font-extrabold tracking-[-.06em] text-[#641d36]">postwave</span>}
+    {!compact && <span className="font-display text-[19px] font-extrabold tracking-[-.06em] text-[#145a7c]">postwave</span>}
   </a>;
 }
 function Footer() {
@@ -170,7 +171,7 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
 
 function AppFrame({ user, onLogout, children }: { user: User; onLogout: () => void; children: ReactNode }) {
   const [mobileMenu, setMobileMenu] = useState(false);
-  const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }];
+  const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/calendar", label: "Calendar", icon: CalendarDays }, { href: "/drafts", label: "Drafts", icon: FileText }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }];
   const pathname = usePathname() ?? "/dashboard";
   return <div className="min-h-[100dvh] bg-[#f5f9fa]">
     <header className="sticky top-0 z-20 border-b border-[#e0eaed] bg-[#f9fcfc]/95 backdrop-blur">
@@ -300,7 +301,98 @@ function PlatformIcon({ platform }: { platform: string }) {
   return <Globe2 className="h-4 w-4" />;
 }
 
-function ComposePage() {
+function zonedInputToIso(value: string, timezone: string) {
+  const [datePart, timePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+  const desired = Date.UTC(year, month - 1, day, hour, minute);
+  const first = new Date(desired);
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(first);
+  const values = Object.fromEntries(parts.map((part) => [part.type, Number(part.value)]));
+  const represented = Date.UTC(values.year, values.month - 1, values.day, values.hour, values.minute);
+  return new Date(desired + desired - represented).toISOString();
+}
+
+function CalendarPage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: string }) {
+  const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [timezone, setTimezone] = useState(savedTimezone);
+  const [selectedDay, setSelectedDay] = useState("");
+  const start = new Date(Date.UTC(month.getFullYear(), month.getMonth(), 1) - 86_400_000);
+  const end = new Date(Date.UTC(month.getFullYear(), month.getMonth() + 1, 1) + 86_400_000);
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const result = await api<{ posts: Post[] }>(`/api/posts?from=${encodeURIComponent(start.toISOString())}&to=${encodeURIComponent(end.toISOString())}`);
+      setPosts((result.posts || []).filter((post) => post.scheduledAt));
+      const zone = result.posts?.find((post) => post.timezone)?.timezone;
+      if (zone) setTimezone(zone);
+    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't load your calendar."); }
+    finally { setLoading(false); }
+  }, [start.toISOString(), end.toISOString()]);
+  useEffect(() => { void load(); }, [load]);
+  const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const offset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
+  const scheduledForDay = (day: number) => posts.filter((post) => {
+    if (!post.scheduledAt) return false;
+    return new Intl.DateTimeFormat("en-CA", { timeZone: post.timezone || timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(post.scheduledAt)) === `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  });
+  const selectedPosts = selectedDay ? scheduledForDay(Number(selectedDay.split("-")[2])) : [];
+  const setMonthBy = (delta: number) => { setMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1)); setSelectedDay(""); };
+  const monthLabel = month.toLocaleDateString("en", { month: "long", year: "numeric" });
+  return <>
+    <PageTitle eyebrow="Plan ahead" title="Publishing calendar" description="A clear view of what’s scheduled, shown in your publishing timezone." action={<Button variant="secondary" disabled={loading} onClick={() => void load()}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button>} />
+    {error && <div className="mb-4 flex flex-wrap items-center gap-3"><Notice>{error}</Notice><Button variant="secondary" onClick={() => void load()}>Try again</Button></div>}
+    <Card className="overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7eef0] px-4 py-4 sm:px-6">
+        <div><h2 className="font-display text-lg font-extrabold text-[#29495c]">{monthLabel}</h2><p className="mt-1 text-xs text-[#82949f]">Times shown in {timezone}</p></div>
+        <div className="flex items-center gap-2"><Button aria-label="Previous month" variant="secondary" className="min-h-9 w-9 px-0" onClick={() => setMonthBy(-1)}><ChevronLeft className="h-4 w-4" /></Button><Button variant="secondary" className="min-h-9 px-3 text-xs" onClick={() => { setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setSelectedDay(""); }}>Today</Button><Button aria-label="Next month" variant="secondary" className="min-h-9 w-9 px-0" onClick={() => setMonthBy(1)}><ChevronRight className="h-4 w-4" /></Button></div>
+      </div>
+      {loading ? <div className="grid grid-cols-7 gap-px bg-[#e7eef0] p-px">{Array.from({ length: 35 }, (_, i) => <Skeleton key={i} className="h-20 rounded-none sm:h-28" />)}</div> : <div className="grid grid-cols-7 gap-px bg-[#e7eef0] p-px">
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => <div key={day} className="bg-[#f5f9fa] px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-[#82949f] sm:px-3 sm:text-xs">{day}</div>)}
+        {Array.from({ length: Math.ceil((offset + days) / 7) * 7 }, (_, index) => {
+          const day = index - offset + 1;
+          if (day < 1 || day > days) return <div key={index} className="min-h-[72px] bg-[#fafcfc] sm:min-h-[116px]" />;
+          const dayPosts = scheduledForDay(day);
+          const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          return <button key={key} onClick={() => setSelectedDay(selectedDay === key ? "" : key)} className={`min-h-[72px] overflow-hidden bg-white p-1.5 text-left transition hover:bg-[#f2faf9] sm:min-h-[116px] sm:p-3 ${selectedDay === key ? "ring-2 ring-inset ring-[#3a9b9c]" : ""}`} aria-label={`${monthLabel} ${day}, ${dayPosts.length} scheduled posts`}>
+            <span className={`text-xs font-semibold ${selectedDay === key ? "text-[#176f98]" : "text-[#597687]"}`}>{day}</span>
+            <div className="mt-1 grid gap-1">{dayPosts.slice(0, 2).map((post) => <span key={post.id} className="truncate rounded-md bg-[#e8f5f3] px-1.5 py-1 text-[9px] font-semibold text-[#286f75] sm:text-[11px]">{new Date(post.scheduledAt!).toLocaleTimeString([], { timeZone: post.timezone || timezone, hour: "numeric", minute: "2-digit" })} · {post.content || "Media post"}</span>)}{dayPosts.length > 2 && <span className="text-[9px] text-[#748b96]">+{dayPosts.length - 2} more</span>}</div>
+          </button>;
+        })}
+      </div>}
+    </Card>
+    {selectedDay && <Card className="mt-5 p-5"><h3 className="font-display font-bold text-[#29495c]">{new Date(`${selectedDay}T12:00:00`).toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric", timeZone: timezone })}</h3>
+      {selectedPosts.length ? <div className="mt-3 grid gap-3">{selectedPosts.map((post) => <div key={post.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[#e3ecee] p-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e9f4f2] text-[#398b8b]"><Clock className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-[#38596a]">{post.content || "Media post"}</span><span className="text-xs text-[#82949f]">{new Date(post.scheduledAt!).toLocaleString([], { timeZone: post.timezone || timezone })} · {post.timezone || timezone}</span></span><StatusPill status={post.status} /></div>)}</div> : <p className="mt-2 text-sm text-[#82949f]">Nothing scheduled for this day.</p>}
+    </Card>}
+    {!loading && !error && posts.length === 0 && <div className="mt-5"><EmptyState icon={CalendarDays} title="A little breathing room" detail="Your scheduled posts will appear here as you plan ahead." action={<a href="/compose" className="text-sm font-bold text-[#267b8c]">Schedule a post <ArrowRight className="ml-1 inline h-4 w-4" /></a>} /></div>}
+  </>;
+}
+
+function DraftsPage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const refresh = useCallback(async () => {
+    setLoading(true); setError("");
+    try { const result = await api<{ posts: Post[] }>("/api/posts"); setPosts((result.posts || []).filter((post) => post.status.toLowerCase() === "draft")); }
+    catch (e) { setError(e instanceof Error ? e.message : "Couldn't load your drafts."); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
+  return <>
+    <PageTitle eyebrow="Your ideas, in progress" title="Drafts" description="Keep a thought here until it’s ready to meet the world." action={<a href="/compose" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#176f98] px-4 text-sm font-bold text-white hover:bg-[#125c7d]"><Plus className="h-4 w-4" />New draft</a>} />
+    {error && <div className="mb-4 flex flex-wrap items-center gap-3"><Notice>{error}</Notice><Button variant="secondary" onClick={() => void refresh()}><RefreshCw className="h-4 w-4" />Retry</Button></div>}
+    {loading ? <div className="grid gap-4 sm:grid-cols-2">{[1, 2, 3, 4].map((n) => <Card key={n} className="p-5"><Skeleton className="h-5 w-2/3" /><Skeleton className="mt-4 h-16 w-full" /></Card>)}</div> : posts.length ? <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <Card key={post.id} className="flex flex-col p-5">
+      <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e9f4f2] text-[#35868b]"><FileText className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="line-clamp-4 whitespace-pre-wrap text-sm leading-6 text-[#3f5d6e]">{post.content || "Media post"}</p><p className="mt-2 text-[11px] text-[#899aa3]">Edited {new Date(post.createdAt).toLocaleString()}</p></div><StatusPill status={post.status} /></div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#edf2f3] pt-4"><span className="text-xs text-[#82949f]">{post.platforms?.length || 0} selected destinations</span><a href={`/compose?draft=${encodeURIComponent(post.id)}`} className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-[#176f98] px-3 text-xs font-bold text-white hover:bg-[#125c7d]">Open in Compose <ArrowRight className="h-3.5 w-3.5" /></a></div>
+    </Card>)}</div> : !error && <EmptyState icon={FileText} title="Nothing saved just yet" detail="Save a work-in-progress in Compose and it’ll be waiting here when inspiration returns." action={<a href="/compose" className="text-sm font-bold text-[#267b8c]">Start a draft <ArrowRight className="ml-1 inline h-4 w-4" /></a>} />}
+  </>;
+}
+
+function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: string }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [accountsError, setAccountsError] = useState("");
@@ -312,6 +404,11 @@ function ComposePage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [draftId, setDraftId] = useState("");
+  const [timezone, setTimezone] = useState(savedTimezone);
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [draftLoading, setDraftLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const activeAccounts = useMemo(() => accounts.filter((account) => account.isActive), [accounts]);
   const selectedAccounts = useMemo(() => activeAccounts.filter((account) => selected.includes(account.id)), [activeAccounts, selected]);
@@ -321,6 +418,23 @@ function ComposePage() {
     catch (e) { setAccountsError(e instanceof Error ? e.message : "Couldn't load your accounts."); } finally { setAccountsLoading(false); }
   }, []);
   useEffect(() => { void refreshAccounts(); }, [refreshAccounts]);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("draft");
+    if (!id) return;
+    setDraftId(id); setDraftLoading(true); setError("");
+    api<{ post: Post }>(`/api/posts/${encodeURIComponent(id)}`).then(({ post }) => {
+      setContent(post.content || "");
+      setSelected(post.platforms?.map((target) => target.accountId) || []);
+      const media = post.media || [];
+      setAssets(media.map((item) => ({ ...item, key: item.key || "" })));
+      setFiles([]);
+      setTimezone(post.timezone || "Africa/Lagos");
+      if (post.scheduledAt) {
+        const date = new Date(post.scheduledAt);
+        setScheduledFor(new Intl.DateTimeFormat("sv-SE", { timeZone: post.timezone || "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(date).replace(" ", "T"));
+      }
+    }).catch((e) => setError(e instanceof Error ? e.message : "Couldn't load this draft.")).finally(() => setDraftLoading(false));
+  }, []);
   const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   const uploadFiles = async (fileList: FileList | null) => {
     if (!fileList?.length) return;
@@ -339,18 +453,25 @@ function ComposePage() {
     finally { setUploading(false); }
   };
   const removeFile = (index: number) => { setFiles((current) => current.filter((_, i) => i !== index)); setAssets((current) => current.filter((_, i) => i !== index)); };
-  const publish = async () => {
+  const submitPost = async (intent: "draft" | "schedule" | "publish_now") => {
     setBusy(true); setError(""); setNotice("");
     try {
-      await api("/api/posts", json({ content, accountIds: selected, mediaAssetIds: assets.map((asset) => asset.id) }));
-      setNotice("Your post was sent. Check History for the result on each platform."); setContent(""); setSelected([]); setFiles([]); setAssets([]);
+      if (intent === "schedule" && !scheduledFor) throw new Error("Choose a date and time before scheduling.");
+      const payload: Record<string, unknown> = { intent, content, accountIds: selected, mediaAssetIds: assets.map((asset) => asset.id), timezone };
+      if (draftId) payload.draftId = draftId;
+      if (intent === "schedule") payload.scheduledFor = zonedInputToIso(scheduledFor, timezone);
+      const saved = await api<{ postId: string; status: string }>("/api/posts", json(payload));
+      if (intent === "draft") setDraftId(saved.postId);
+      setNotice(intent === "draft" ? "Draft saved. Find it anytime in Drafts." : intent === "schedule" ? "Your post is scheduled." : "Your post was sent. Check History for the result on each platform.");
+      if (intent !== "draft") { setContent(""); setSelected([]); setFiles([]); setAssets([]); setDraftId(""); setScheduledFor(""); }
     } catch (e) { setError(e instanceof Error ? e.message : "Couldn't publish your post."); }
     finally { setBusy(false); }
   };
-  const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void publish(); };
+  const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void submitPost("publish_now"); };
   const chooseFiles = (event: ChangeEvent<HTMLInputElement>) => { void uploadFiles(event.target.files); event.target.value = ""; };
   return <>
-    <PageTitle eyebrow="Make it yours" title="Compose a post" description="Write it once, choose your destinations, then publish now." />
+    <PageTitle eyebrow={draftId ? "Draft in progress" : "Make it yours"} title={draftId ? "Edit your draft" : "Compose a post"} description="One post. Every platform. Shape it here, then choose when it goes live." />
+    {draftLoading && <div className="mb-4"><Skeleton className="h-12 w-full" /></div>}
     <form onSubmit={submit} className="grid items-start gap-5 lg:grid-cols-[1.15fr_.85fr]">
       <div className="grid gap-5">
         <Card className="p-5 sm:p-6">
@@ -359,13 +480,13 @@ function ComposePage() {
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#8798a1]"><span>Keep your copy clear across every channel.</span><span>Up to 5,000 characters</span></div>
         </Card>
         <Card className="p-5 sm:p-6">
-          <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Media</h2><p className="mt-1 text-xs text-[#8798a1]">Attach images or video to your post.</p></div><span className="text-[11px] text-[#8b9ba3]">{files.length} attached</span></div>
+          <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Media</h2><p className="mt-1 text-xs text-[#8798a1]">Attach images or video to your post.</p></div><span className="text-[11px] text-[#8b9ba3]">{assets.length} attached</span></div>
           <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="sr-only" onChange={chooseFiles} id="post-media" />
           <label htmlFor="post-media" className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#bfd5db] bg-[#f8fbfc] px-5 py-7 text-center transition hover:border-[#77b8b7] hover:bg-[#f2faf8]">
             <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e5f3f0] text-[#3d9288]">{uploading ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}</span><span className="text-sm font-bold text-[#456477]">{uploading ? "Uploading media…" : "Choose images or videos"}</span><span className="mt-1 text-xs text-[#899aa3]">Select files from your device</span>
           </label>
-          {files.length > 0 && <div className="mt-3 grid gap-2">{files.map((file, index) => <div key={`${file.name}-${index}`} className="flex items-center gap-3 rounded-xl border border-[#e4ecef] px-3 py-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#edf5f6] text-[#5b8996]">{file.type.startsWith("image/") ? <FileImage className="h-4 w-4" /> : <ArrowDownToLine className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><div className="truncate text-xs font-semibold text-[#466476]">{file.name}</div><div className="mt-0.5 text-[10px] text-[#8a9ba3]">{(file.size / 1024 / 1024).toFixed(1)} MB · uploaded</div></div><button type="button" onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8799a1] hover:bg-[#fff0ed] hover:text-[#a75245]"><X className="h-4 w-4" /></button>
+          {assets.length > 0 && <div className="mt-3 grid gap-2">{assets.map((asset, index) => <div key={asset.id} className="flex items-center gap-3 rounded-xl border border-[#e4ecef] px-3 py-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#edf5f6] text-[#5b8996]">{asset.contentType.startsWith("image/") ? <FileImage className="h-4 w-4" /> : <ArrowDownToLine className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><div className="truncate text-xs font-semibold text-[#466476]">{files[index]?.name || `Attached ${asset.contentType.startsWith("image/") ? "image" : "video"}`}</div><div className="mt-0.5 text-[10px] text-[#8a9ba3]">{(asset.size / 1024 / 1024).toFixed(1)} MB · uploaded</div></div><button type="button" onClick={() => { setAssets((current) => current.filter((_, i) => i !== index)); setFiles((current) => current.filter((_, i) => i !== index)); }} aria-label={`Remove media ${index + 1}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8799a1] hover:bg-[#fff0ed] hover:text-[#a75245]"><X className="h-4 w-4" /></button>
           </div>)}</div>}
         </Card>
       </div>
@@ -398,6 +519,18 @@ function ComposePage() {
           <p className="mt-3 text-[10px] leading-4 text-[#92a0a7]">Counts are estimates; platform rules and URL or emoji weighting can vary.</p>
         </Card>
         {error && <Notice>{error}</Notice>}{notice && <Notice tone="success">{notice}</Notice>}
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button type="button" variant="secondary" disabled={busy || uploading || (!content.trim() && !assets.length)} onClick={() => void submitPost("draft")}><Save className="h-4 w-4" />Save draft</Button>
+          <Button type="button" variant="secondary" disabled={busy || uploading || (!content.trim() && !assets.length) || !selected.length} onClick={() => setScheduleOpen((open) => !open)}><CalendarDays className="h-4 w-4" />Schedule</Button>
+        </div>
+        {scheduleOpen && <Card className="grid gap-3 p-4">
+          <div className="flex items-center gap-2 text-sm font-bold text-[#29495c]"><Clock className="h-4 w-4 text-[#318b91]" />Choose a publishing time</div>
+          <Field label="Date and time" type="datetime-local" value={scheduledFor} onChange={(e) => setScheduledFor(e.target.value)} />
+          <Field label="Timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} list="postwave-timezones" />
+          <datalist id="postwave-timezones"><option value="Africa/Lagos" /><option value="Europe/London" /><option value="America/New_York" /><option value="America/Los_Angeles" /><option value="Asia/Tokyo" /></datalist>
+          <p className="text-[11px] text-[#7e929d]">Scheduled using {timezone}.</p>
+          <Button type="button" disabled={busy || !scheduledFor || !selected.length} onClick={() => void submitPost("schedule")}>{busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />}Confirm schedule</Button>
+        </Card>}
         <Button type="submit" disabled={busy || uploading || accountsLoading || !content.trim() || !selected.length || Boolean(accountsError)} className="h-12 w-full text-sm">{busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{busy ? "Publishing…" : "Publish now"}<ArrowRight className="ml-auto h-4 w-4" /></Button>
         <p className="text-center text-[11px] text-[#8b9ba3]">Your post will be sent to the selected accounts right away.</p>
       </div>
@@ -413,7 +546,7 @@ function HistoryPage() {
   const [notice, setNotice] = useState("");
   const refresh = useCallback(async () => {
     setLoading(true); setError("");
-    try { const result = await api<{ posts: Post[] }>("/api/posts"); setPosts(result.posts || []); }
+    try { const result = await api<{ posts: Post[] }>("/api/posts"); setPosts((result.posts || []).filter((post) => post.status.toLowerCase() !== "draft")); }
     catch (e) { setError(e instanceof Error ? e.message : "Couldn't load post history."); } finally { setLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
@@ -444,7 +577,7 @@ export function PostwaveShell() {
   const pathname = usePathname() ?? "/";
   const path = pathname.replace(/\/$/, "") || "/";
   const authRoutes = ["/login", "/signup", "/verify-email", "/forgot-password", "/reset-password"];
-  const protectedRoutes = ["/dashboard", "/accounts", "/compose", "/history", "/"];
+  const protectedRoutes = ["/dashboard", "/accounts", "/compose", "/history", "/calendar", "/drafts", "/"];
   useEffect(() => {
     let live = true;
     api<{ user: User | null }>("/api/auth/me").then((result) => { if (live) setUser(result.user); }).catch(() => { if (live) setUser(null); }).finally(() => { if (live) setAuthLoading(false); });
@@ -454,10 +587,34 @@ export function PostwaveShell() {
     try { await api("/api/auth/logout", { method: "POST" }); } finally { setUser(null); window.location.href = "/login"; }
   };
   const refreshUser = () => { api<{ user: User | null }>("/api/auth/me").then((result) => setUser(result.user)).catch(() => setUser(null)); };
-  if (authRoutes.includes(path)) return <AuthPage path={path} onAuth={refreshUser} />;
+  if (authRoutes.includes(path)) return <><style>{`
+    :root{--paper:#f2f8fa;--surface:rgba(255,255,255,.9);--burgundy:#176f98;--burgundy-deep:#125c7d;--burgundy-soft:#e5f3f3;--ink:#18384d;--muted:#718796;--line:#dce9ed}
+    body{background:radial-gradient(ellipse at 5% 0%,rgba(158,220,218,.22),transparent 36rem),#f2f8fa!important;color:#18384d!important}
+    [class*="bg-[#f5f9fa]"]{background-color:#f2f8fa!important}[class*="bg-[#f9fcfc]"]{background-color:rgba(249,253,253,.95)!important}
+    [class*="bg-[#751f3b]"],[class*="bg-[#641d36]"]{background-color:#176f98!important}
+    [class*="bg-[#176f98]"]{background-color:#176f98!important}[class*="bg-[#176f98]"]:hover{background-color:#125c7d!important}
+    [class*="bg-[#eaf5f4]"],[class*="bg-[#e6f3f2]"],[class*="bg-[#f1faf7]"],[class*="bg-[#e7f4f1]"],[class*="bg-[#edf5f6]"],[class*="bg-[#edf5f5]"],[class*="bg-[#e8f4f2]"],[class*="bg-[#e5f3f0]"],[class*="bg-[#e6f4f1]"],[class*="bg-[#e3f5f1]"]{background-color:#e7f4f3!important}
+    [class*="text-[#641d36]"],[class*="text-[#751f3b]"],[class*="text-[#19799a]"],[class*="text-[#176f98]"],[class*="text-[#216f79]"],[class*="text-[#227a91]"],[class*="text-[#267b8c]"],[class*="text-[#287c91]"],[class*="text-[#388b91]"],[class*="text-[#378c8a]"],[class*="text-[#348d8a]"],[class*="text-[#398b81]"],[class*="text-[#3c8e87]"],[class*="text-[#3d9288]"],[class*="text-[#3d9b8c]"],[class*="text-[#428982]"],[class*="text-[#438e8b]"],[class*="text-[#448a80]"],[class*="text-[#45988a]"],[class*="text-[#478f8a]"],[class*="text-[#528491]"],[class*="text-[#568994]"],[class*="text-[#578993]"],[class*="text-[#5b8996]"]{color:#176f98!important}
+    section.rounded-2xl{border-color:rgba(48,105,126,.14)!important;box-shadow:0 12px 34px rgba(32,78,95,.06),0 2px 7px rgba(32,78,95,.03)!important}
+    header.sticky{background:rgba(248,252,252,.88)!important;border-color:#dce9ed!important}
+    input:not([type=checkbox]),textarea{border-color:#dce9ed!important;color:#18384d!important}input:not([type=checkbox]):focus,textarea:focus{border-color:#4eabb3!important;--tw-ring-color:rgba(78,171,179,.16)!important}
+    input[type=checkbox]{accent-color:#187c91!important}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline-color:rgba(23,111,152,.42)!important}
+    ::selection{color:#125c7d;background:#cfeae8}
+  `}</style><AuthPage path={path} onAuth={refreshUser} /></>;
   if (!protectedRoutes.includes(path)) return <AuthPage path="/login" onAuth={refreshUser} />;
   if (authLoading) return <div className="flex min-h-[100dvh] flex-col bg-[#f5f9fa]"><header className="h-[68px] px-5 py-4"><Brand /></header><main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-10"><Skeleton className="h-9 w-64" /><Skeleton className="mt-3 h-4 w-80" /><div className="mt-8 grid gap-4 sm:grid-cols-3"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div><Skeleton className="mt-6 h-64" /></main><Footer /></div>;
   if (!user) return <AuthPage path="/login" onAuth={refreshUser} />;
-  const view = path === "/accounts" ? <AccountsPage /> : path === "/compose" ? <ComposePage /> : path === "/history" ? <HistoryPage /> : <Dashboard />;
-  return <AppFrame user={user} onLogout={() => void logout()}>{view}</AppFrame>;
+  const view = path === "/accounts" ? <AccountsPage /> : path === "/compose" ? <ComposePage savedTimezone={user.timezone} /> : path === "/history" ? <HistoryPage /> : path === "/calendar" ? <CalendarPage savedTimezone={user.timezone} /> : path === "/drafts" ? <DraftsPage /> : <Dashboard />;
+  return <><style>{`
+    :root{--paper:#f2f8fa;--surface:rgba(255,255,255,.9);--burgundy:#176f98;--burgundy-deep:#125c7d;--burgundy-soft:#e5f3f3;--ink:#18384d;--muted:#718796;--line:#dce9ed}
+    body{background:radial-gradient(ellipse at 5% 0%,rgba(158,220,218,.22),transparent 36rem),#f2f8fa!important;color:#18384d!important}
+    [class*="bg-[#f5f9fa]"]{background-color:#f2f8fa!important}[class*="bg-[#f9fcfc]"]{background-color:rgba(249,253,253,.95)!important}
+    [class*="bg-[#176f98]"]{background-color:#176f98!important}[class*="bg-[#176f98]"]:hover{background-color:#125c7d!important}
+    [class*="bg-[#eaf5f4]"],[class*="bg-[#e6f3f2]"],[class*="bg-[#f1faf7]"],[class*="bg-[#e7f4f1]"],[class*="bg-[#edf5f6]"],[class*="bg-[#edf5f5]"],[class*="bg-[#e8f4f2]"],[class*="bg-[#e5f3f0]"],[class*="bg-[#e6f4f1]"],[class*="bg-[#e3f5f1]"]{background-color:#e7f4f3!important}
+    [class*="text-[#641d36]"],[class*="text-[#751f3b]"],[class*="text-[#19799a]"],[class*="text-[#176f98]"],[class*="text-[#216f79]"],[class*="text-[#227a91]"],[class*="text-[#267b8c]"],[class*="text-[#287c91]"],[class*="text-[#388b91]"],[class*="text-[#378c8a]"],[class*="text-[#348d8a]"],[class*="text-[#398b81]"],[class*="text-[#3c8e87]"],[class*="text-[#3d9288]"],[class*="text-[#3d9b8c]"],[class*="text-[#428982]"],[class*="text-[#438e8b]"],[class*="text-[#448a80]"],[class*="text-[#45988a]"],[class*="text-[#478f8a]"],[class*="text-[#528491]"],[class*="text-[#568994]"],[class*="text-[#578993]"],[class*="text-[#5b8996]"]{color:#176f98!important}
+    section.rounded-2xl{border-color:rgba(48,105,126,.14)!important;box-shadow:0 12px 34px rgba(32,78,95,.06),0 2px 7px rgba(32,78,95,.03)!important}
+    header.sticky{background:rgba(248,252,252,.88)!important;border-color:#dce9ed!important}
+    input:not([type=checkbox]),textarea{border-color:#dce9ed!important;color:#18384d!important}input:not([type=checkbox]):focus,textarea:focus{border-color:#4eabb3!important;--tw-ring-color:rgba(78,171,179,.16)!important}
+    input[type=checkbox]{accent-color:#187c91!important}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline-color:rgba(23,111,152,.42)!important}::selection{color:#125c7d;background:#cfeae8}
+  `}</style><AppFrame user={user} onLogout={() => void logout()}>{view}</AppFrame></>;
 }

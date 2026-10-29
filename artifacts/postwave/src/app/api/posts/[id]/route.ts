@@ -1,5 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import {
+  mediaAssets,
+  postMedia,
   postPlatforms,
   posts,
 } from "@/db/schema";
@@ -25,6 +27,8 @@ export async function GET(
         status: posts.status,
         createdAt: posts.createdAt,
         publishedAt: posts.publishedAt,
+        scheduledAt: posts.scheduledAt,
+        timezone: posts.timezone,
       })
       .from(posts)
       .where(and(eq(posts.id, id), eq(posts.userId, user.id)))
@@ -46,7 +50,24 @@ export async function GET(
           eq(postPlatforms.userId, user.id),
         ),
       );
-    return jsonResponse({ post: { ...post, platforms } });
+    const media = await db
+      .select({
+        id: mediaAssets.id,
+        key: mediaAssets.objectKey,
+        publicUrl: mediaAssets.publicUrl,
+        contentType: mediaAssets.contentType,
+        size: mediaAssets.size,
+      })
+      .from(postMedia)
+      .innerJoin(mediaAssets, eq(postMedia.mediaId, mediaAssets.id))
+      .where(
+        and(
+          eq(postMedia.postId, post.id),
+          eq(postMedia.userId, user.id),
+          eq(mediaAssets.userId, user.id),
+        ),
+      );
+    return jsonResponse({ post: { ...post, platforms, media } });
   } catch (error) {
     return errorResponse(error);
   }

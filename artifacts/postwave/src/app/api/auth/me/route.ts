@@ -14,6 +14,7 @@ export async function GET() {
         email: user.email,
         name: user.name,
         role: user.role,
+        timezone: user.timezone,
       },
     });
   } catch (error) {

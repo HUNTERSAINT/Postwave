@@ -28,6 +28,8 @@ export const authTokenType = pgEnum("auth_token_type", [
 ]);
 export const postStatus = pgEnum("post_status", [
   "queued",
+  "scheduled",
+  "draft",
   "publishing",
   "published",
   "partial",
@@ -35,6 +37,8 @@ export const postStatus = pgEnum("post_status", [
 ]);
 export const platformPostStatus = pgEnum("platform_post_status", [
   "queued",
+  "scheduled",
+  "draft",
   "publishing",
   "published",
   "failed",
@@ -163,12 +167,17 @@ export const posts = pgTable(
     content: text("content").notNull(),
     status: postStatus("status").default("queued").notNull(),
     zernioPostId: varchar("zernio_post_id", { length: 64 }),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    timezone: varchar("timezone", { length: 64 })
+      .default("Africa/Lagos")
+      .notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     publishedAt: timestamp("published_at", { withTimezone: true }),
   },
   (table) => [
     index("posts_user_created_idx").on(table.userId, table.createdAt),
+    index("posts_user_scheduled_idx").on(table.userId, table.scheduledAt),
     uniqueIndex("posts_zernio_post_id_unique").on(table.zernioPostId),
   ],
 );

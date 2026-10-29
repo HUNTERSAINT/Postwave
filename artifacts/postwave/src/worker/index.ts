@@ -3,6 +3,7 @@ import { POSTWAVE_QUEUE_NAME, type PublishJobData } from "@/lib/queue/publish-qu
 import { getRedisConnection } from "@/lib/queue/connection";
 import { logger } from "@/lib/logger";
 import { processPublishJob } from "@/lib/worker/publish-post";
+import { enqueueDueScheduledPosts } from "@/lib/worker/schedule-due-posts";
 
 const connection = getRedisConnection();
 const worker = new Worker<PublishJobData>(
@@ -33,7 +34,33 @@ worker.on("error", (error) => {
   logger.error({ errorName: error.name }, "Postwave worker error");
 });
 
+let scanningScheduledPosts = false;
+async function scanScheduledPosts() {
+  if (scanningScheduledPosts) return;
+  scanningScheduledPosts = true;
+  try {
+    await enqueueDueScheduledPosts();
+  } catch (error) {
+    logger.error(
+      {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      },
+      "Scheduled post scanner failed",
+    );
+  } finally {
+    scanningScheduledPosts = false;
+  }
+}
+
+void scanScheduledPosts();
+const scheduledPostScanTimer = setInterval(
+  () => void scanScheduledPosts(),
+  15_000,
+);
+scheduledPostScanTimer.unref();
+
 const shutdown = async () => {
+  clearInterval(scheduledPostScanTimer);
   await worker.close();
   await connection.quit();
 };

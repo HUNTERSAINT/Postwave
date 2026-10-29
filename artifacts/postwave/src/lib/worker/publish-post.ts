@@ -18,6 +18,7 @@ function normalizedStatus(status?: string) {
   const value = (status ?? "").toLowerCase();
   if (["published", "success", "completed"].includes(value)) return "published" as const;
   if (["failed", "error", "rejected"].includes(value)) return "failed" as const;
+  if (value === "scheduled") return "scheduled" as const;
   return "publishing" as const;
 }
 
@@ -28,11 +29,13 @@ export async function updatePostStatus(postId: string, userId: string) {
     .from(postPlatforms)
     .where(and(eq(postPlatforms.postId, postId), eq(postPlatforms.userId, userId)));
   const values = targets.map((target) => target.status);
-  let status: "published" | "failed" | "partial" | "publishing";
+  let status: "published" | "failed" | "partial" | "publishing" | "scheduled";
   if (values.length && values.every((value) => value === "published")) {
     status = "published";
   } else if (values.length && values.every((value) => value === "failed")) {
     status = "failed";
+  } else if (values.some((value) => value === "scheduled")) {
+    status = "scheduled";
   } else if (values.some((value) => value === "queued" || value === "publishing")) {
     status = "publishing";
   } else {
@@ -87,17 +90,23 @@ export async function processPublishJob(
     .where(eq(users.id, data.userId))
     .limit(1);
   const [post] = await db
-    .select({ id: posts.id, content: posts.content })
+    .select({ id: posts.id, content: posts.content, status: posts.status })
     .from(posts)
     .where(and(eq(posts.id, data.postId), eq(posts.userId, data.userId)))
     .limit(1);
 
-  if (!user || !post) return;
+  if (
+    !user ||
+    !post ||
+    (post.status !== "queued" && post.status !== "scheduled")
+  ) {
+    return;
+  }
 
   const filters = [
     eq(postPlatforms.postId, post.id),
     eq(postPlatforms.userId, user.id),
-    eq(postPlatforms.status, "queued"),
+    inArray(postPlatforms.status, ["queued", "scheduled"]),
   ];
   if (data.targetIds?.length) {
     filters.push(inArray(postPlatforms.id, data.targetIds));
