@@ -17,6 +17,16 @@ out-tsc
 # dependencies
 node_modules
 
+# environment files (keep only the safe template)
+.env*
+!.env.example
+!.env.*.example
+
+# Next.js and build outputs
+.next/
+/artifacts/postwave/out/
+/artifacts/postwave/build/
+
 # IDEs and editors
 /.idea
 .project

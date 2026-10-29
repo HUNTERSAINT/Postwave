@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -13,6 +13,7 @@ import { requireUser } from "@/lib/auth/session";
 import { getDatabase } from "@/lib/db";
 import { errorResponse, HttpError, jsonResponse, parseJson } from "@/lib/http";
 import { getPublishQueue } from "@/lib/queue/publish-queue";
+import { countCharacters, platformCharacterLimit } from "@/lib/social/platform-limits";
 
 const schema = z.object({
   content: z.string().trim().min(1).max(5000),
@@ -57,7 +58,10 @@ export async function GET() {
       })
       .from(postPlatforms)
       .where(
-        eq(postPlatforms.userId, user.id),
+        and(
+          eq(postPlatforms.userId, user.id),
+          inArray(postPlatforms.postId, rows.map((post) => post.id)),
+        ),
       );
     const postIds = new Set(rows.map((post) => post.id));
     const grouped = new Map<string, typeof targets>();
@@ -89,6 +93,7 @@ export async function POST(request: Request) {
     await enforceRateLimit(request, "posts-create-user", 10, 60, user.id);
     await enforceRateLimit(request, "posts-create-ip", 30, 60);
     const input = await parseJson(request, schema);
+    const mediaAssetIds = input.mediaAssetIds ?? [];
     const queue = getPublishQueue();
     const { db } = getDatabase();
 
@@ -97,12 +102,13 @@ export async function POST(request: Request) {
         id: socialAccounts.id,
         providerAccountId: socialAccounts.zernioAccountId,
         platform: socialAccounts.platform,
+        isActive: socialAccounts.isActive,
       })
       .from(socialAccounts)
       .where(eq(socialAccounts.userId, user.id));
     const accountMap = new Map(
       accounts
-        .filter((account) => account.isActive !== false)
+      .filter((account) => account.isActive)
         .map((account) => [account.id, account]),
     );
     const selectedAccounts = input.accountIds
@@ -114,17 +120,31 @@ export async function POST(request: Request) {
         "One or more selected accounts are not active on your account.",
       );
     }
+    const characterCount = countCharacters(input.content);
+    const tooLongFor = selectedAccounts.find((account) => {
+      const limit = platformCharacterLimit(account.platform);
+      return limit !== undefined && characterCount > limit;
+    });
+    if (tooLongFor) {
+      throw new HttpError(
+        400,
+        `This post exceeds the ${tooLongFor.platform} character limit.`,
+      );
+    }
 
     let media: { id: string }[] = [];
-    if (input.mediaAssetIds.length) {
+    if (mediaAssetIds.length) {
       media = await db
         .select({ id: mediaAssets.id })
         .from(mediaAssets)
         .where(
-          eq(mediaAssets.userId, user.id),
+          and(
+            eq(mediaAssets.userId, user.id),
+            inArray(mediaAssets.id, mediaAssetIds),
+          ),
         );
       const mediaIds = new Set(media.map((asset) => asset.id));
-      if (input.mediaAssetIds.some((id) => !mediaIds.has(id))) {
+      if (mediaAssetIds.some((id) => !mediaIds.has(id))) {
         throw new HttpError(400, "One or more media files are not available.");
       }
     }
@@ -148,9 +168,9 @@ export async function POST(request: Request) {
           status: "queued" as const,
         })),
       );
-      if (input.mediaAssetIds.length) {
+      if (mediaAssetIds.length) {
         await tx.insert(postMedia).values(
-          input.mediaAssetIds.map((mediaId) => ({
+          mediaAssetIds.map((mediaId) => ({
             postId,
             mediaId,
             userId: user.id,

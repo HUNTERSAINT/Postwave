@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0 --port ${PORT:-3000}",
     "build": "next build",
-    "start": "pnpm db:migrate && next start --hostname 0.0.0.0 --port ${PORT:-3000}",
-    "start:worker": "pnpm db:migrate && tsx src/worker/index.ts",
-    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "start": "pnpm run db:migrate && next start --hostname 0.0.0.0 --port ${PORT:-3000}",
+    "start:worker": "pnpm run db:migrate && tsx src/worker/index.ts",
+    "db:migrate": "tsx src/db/migrate.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

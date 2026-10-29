@@ -70,6 +70,7 @@ export async function GET(request: Request) {
       .find((account) => account.id === accountId);
     if (
       !connectedAccount ||
+      connectedAccount.platform !== state.platform ||
       (connectedAccount.profileId &&
         connectedAccount.profileId !== state.providerProfileId)
     ) {

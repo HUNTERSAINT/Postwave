@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import {
   ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, AtSign, Check, CheckCircle2,
   ChevronDown, CircleAlert, Clock3, ExternalLink, FileImage, Globe2, ImagePlus,
@@ -17,6 +18,11 @@ type User = { id: string; email: string; name?: string };
 type ApiError = { message?: string };
 
 const platforms = ["instagram", "facebook", "threads", "linkedin", "twitter", "tiktok", "youtube", "pinterest", "reddit", "bluesky", "googlebusiness", "telegram", "discord", "slack", "whatsapp"];
+const platformCharacterLimits: Record<string, number> = {
+  instagram: 2200, facebook: 63206, threads: 500, linkedin: 3000, twitter: 280,
+  tiktok: 2200, youtube: 5000, pinterest: 500, reddit: 40000, bluesky: 300,
+  googlebusiness: 1500, telegram: 4096, discord: 2000, slack: 40000, whatsapp: 4096,
+};
 const platformNames: Record<string, string> = {
   instagram: "Instagram", facebook: "Facebook", threads: "Threads", linkedin: "LinkedIn", twitter: "X", tiktok: "TikTok",
   youtube: "YouTube", pinterest: "Pinterest", reddit: "Reddit", bluesky: "Bluesky", googlebusiness: "Google Business",
@@ -24,7 +30,8 @@ const platformNames: Record<string, string> = {
 };
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+  const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX || "";
+  const response = await fetch(`${apiPrefix}${url}`, {
     ...init,
     credentials: "include",
     headers: { ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...init?.headers },
@@ -37,15 +44,15 @@ function json(body: unknown): RequestInit { return { method: "POST", body: JSON.
 function Brand({ compact = false }: { compact?: boolean }) {
   return <a href="/dashboard" className="inline-flex items-center gap-2.5" aria-label="Postwave home">
     <svg className="wave-mark h-9 w-9" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <rect width="40" height="40" rx="12" fill="#176F98" />
-      <path d="M7 16.5C11.3 16.5 11.3 23.5 15.6 23.5C19.9 23.5 19.9 16.5 24.2 16.5C28.5 16.5 28.5 23.5 32.8 23.5" stroke="#D6FBF1" strokeWidth="3.2" strokeLinecap="round" />
-      <path d="M7 25.5C10.3 25.5 10.8 30 14.3 30C17.8 30 18.3 25.5 21.8 25.5" stroke="#59D2BD" strokeWidth="2.3" strokeLinecap="round" />
+      <rect width="40" height="40" rx="12" fill="#751f3b" />
+      <path d="M7 16.5C11.3 16.5 11.3 23.5 15.6 23.5C19.9 23.5 19.9 16.5 24.2 16.5C28.5 16.5 28.5 23.5 32.8 23.5" stroke="#fff9f8" strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M7 25.5C10.3 25.5 10.8 30 14.3 30C17.8 30 18.3 25.5 21.8 25.5" stroke="#e7a8b7" strokeWidth="2.3" strokeLinecap="round" />
     </svg>
-    {!compact && <span className="font-display text-[19px] font-extrabold tracking-[-.06em] text-[#17364c]">postwave</span>}
+    {!compact && <span className="font-display text-[19px] font-extrabold tracking-[-.06em] text-[#641d36]">postwave</span>}
   </a>;
 }
 function Footer() {
-  return <footer className="mt-auto border-t border-[#e2ecef] px-5 py-5 text-center text-xs text-[#8093a0]">Postwave by Mazi Saint Concepts.</footer>;
+  return <footer className="mt-auto border-t border-[#e2ecef] px-5 py-5 text-center text-xs text-[#8093a0]">Postwave by Mazi Saint Concepts</footer>;
 }
 function Notice({ children, tone = "error" }: { children: ReactNode; tone?: "error" | "success" | "info" }) {
   const colors = tone === "success" ? "border-[#b9e4d9] bg-[#effaf6] text-[#246c5b]" : tone === "info" ? "border-[#cfe3eb] bg-[#f0f8fb] text-[#346a80]" : "border-[#f0c9c1] bg-[#fff5f2] text-[#a34c3d]";
@@ -126,7 +133,7 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
     <main className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-5 pb-12 pt-4 md:grid-cols-[1fr_450px] md:px-10">
       <div className="hidden max-w-xl md:block">
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8ebe9] bg-white/80 px-3 py-1.5 text-xs font-semibold text-[#428982]"><span className="h-1.5 w-1.5 rounded-full bg-[#3bb7a3]" /> Your channels, in sync</div>
-        <h1 className="font-display text-[54px] font-extrabold leading-[1.08] tracking-[-.055em] text-[#193a50]">One post.<br /><span className="text-[#19799a]">Everywhere</span> it matters.</h1>
+        <h1 aria-label="One post. Every platform." className="font-display text-[54px] font-extrabold leading-[1.08] tracking-[-.055em] text-[#193a50]">One post.<br /><span className="text-[#751f3b]">Every platform.</span></h1>
         <p className="mt-5 max-w-md text-base leading-7 text-[#718696]">A quieter, clearer way to publish across the social accounts you own.</p>
         <div className="relative mt-12 max-w-md overflow-hidden rounded-[28px] border border-[#d8e8eb] bg-[#eaf5f5] p-6">
           <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full border-[32px] border-white/50" /><div className="absolute -bottom-16 left-24 h-44 w-44 rounded-full border-[25px] border-[#cce9e6]/70" />
@@ -164,7 +171,7 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
 function AppFrame({ user, onLogout, children }: { user: User; onLogout: () => void; children: ReactNode }) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }];
-  const pathname = typeof window !== "undefined" ? window.location.pathname : "/dashboard";
+  const pathname = usePathname() ?? "/dashboard";
   return <div className="min-h-[100dvh] bg-[#f5f9fa]">
     <header className="sticky top-0 z-20 border-b border-[#e0eaed] bg-[#f9fcfc]/95 backdrop-blur">
       <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-7 lg:px-10">
@@ -371,8 +378,24 @@ function ComposePage() {
         </Card>
         <Card className="p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Platform preview</h2><p className="mt-1 text-xs text-[#8798a1]">Preview is based on the selected accounts.</p></div><ChevronDown className="h-4 w-4 text-[#8a9ba3]" /></div>
-          {selectedAccounts.length ? <div className="grid gap-3">{selectedAccounts.map((account) => <div key={account.id} className="rounded-xl border border-[#e5edef] bg-[#fbfdfd] p-3.5"><div className="mb-2 flex items-center gap-2"><span className="text-[#568994]"><PlatformIcon platform={account.platform} /></span><span className="text-xs font-bold text-[#4b687a]">{platformNames[account.platform] || account.platform}</span><span className="ml-auto text-[10px] text-[#8999a2]">{content.length} characters</span></div><p className="whitespace-pre-wrap break-words text-xs leading-5 text-[#6d8390]">{content || "Your post text will appear here."}</p>{content.length === 0 && <p className="mt-2 text-[10px] text-[#a0afb5]">Write a caption to preview the post.</p>}</div>)}</div> : <div className="rounded-xl border border-dashed border-[#d5e3e6] bg-[#f9fbfb] px-4 py-6 text-center text-xs text-[#8798a1]">Select accounts to see a preview and character count.</div>}
-          <p className="mt-3 text-[10px] leading-4 text-[#92a0a7]">Platform-specific formatting may vary. No extra platform restrictions are available from the current API.</p>
+          {selectedAccounts.length ? <div className="grid gap-3">{selectedAccounts.map((account) => {
+            const characters = Array.from(content).length;
+            const limit = platformCharacterLimits[account.platform];
+            const overLimit = Boolean(limit && characters > limit);
+            return <div key={account.id} className="rounded-xl border border-[#e5edef] bg-[#fbfdfd] p-3.5">
+              <div className="mb-2 flex items-center gap-2"><span className="text-[#568994]"><PlatformIcon platform={account.platform} /></span><span className="text-xs font-bold text-[#4b687a]">{platformNames[account.platform] || account.platform}</span><span className={`ml-auto text-[10px] ${overLimit ? "font-bold text-[#a75245]" : "text-[#8999a2]"}`}>{characters}{limit ? ` / ${limit}` : ""} characters</span></div>
+              <p className="whitespace-pre-wrap break-words text-xs leading-5 text-[#6d8390]">{content || "Your post text will appear here."}</p>
+              {assets.length > 0 && <div className="mt-3 grid grid-cols-2 gap-2">{assets.map((asset, mediaIndex) => {
+                const mediaName = files[mediaIndex]?.name || "Post media";
+                return asset.contentType.startsWith("image/")
+                  ? <img key={asset.id} src={asset.publicUrl} alt={`${mediaName} preview`} loading="lazy" className="aspect-video w-full rounded-lg border border-white/70 object-cover shadow-sm" />
+                  : <video key={asset.id} src={asset.publicUrl} controls preload="metadata" aria-label={`${mediaName} preview`} className="aspect-video w-full rounded-lg border border-white/70 bg-black/5 object-cover shadow-sm" />;
+              })}</div>}
+              {overLimit && <p className="mt-2 text-[11px] font-semibold text-[#a75245]" role="alert">This post is over the {platformNames[account.platform]} character limit.</p>}
+              {content.length === 0 && <p className="mt-2 text-[10px] text-[#a0afb5]">Write a caption to preview the post.</p>}
+            </div>;
+          })}</div> : <div className="rounded-xl border border-dashed border-[#d5e3e6] bg-[#f9fbfb] px-4 py-6 text-center text-xs text-[#8798a1]">Select accounts to see a preview and character count.</div>}
+          <p className="mt-3 text-[10px] leading-4 text-[#92a0a7]">Counts are estimates; platform rules and URL or emoji weighting can vary.</p>
         </Card>
         {error && <Notice>{error}</Notice>}{notice && <Notice tone="success">{notice}</Notice>}
         <Button type="submit" disabled={busy || uploading || accountsLoading || !content.trim() || !selected.length || Boolean(accountsError)} className="h-12 w-full text-sm">{busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{busy ? "Publishing…" : "Publish now"}<ArrowRight className="ml-auto h-4 w-4" /></Button>
@@ -418,7 +441,8 @@ function HistoryPage() {
 export function PostwaveShell() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const path = typeof window === "undefined" ? "/" : window.location.pathname.replace(/\/$/, "") || "/";
+  const pathname = usePathname() ?? "/";
+  const path = pathname.replace(/\/$/, "") || "/";
   const authRoutes = ["/login", "/signup", "/verify-email", "/forgot-password", "/reset-password"];
   const protectedRoutes = ["/dashboard", "/accounts", "/compose", "/history", "/"];
   useEffect(() => {

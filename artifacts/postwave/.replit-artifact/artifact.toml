@@ -8,7 +8,7 @@ router = "path"
 
 [[services]]
 name = "web"
-paths = [ "/" ]
+paths = [ "/", "/_next/hmr", "/api/postwave" ]
 localPort = 18243
 
 [services.development]
@@ -26,3 +26,4 @@ to = "/index.html"
 [services.env]
 PORT = "18243"
 BASE_PATH = "/"
+NEXT_PUBLIC_API_PREFIX = "/api/postwave"

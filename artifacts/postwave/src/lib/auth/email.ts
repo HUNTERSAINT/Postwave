@@ -8,15 +8,20 @@ type EmailMessage = {
 };
 
 export function appUrl(path: string, request?: Request) {
+  const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX ?? "";
+  const resolvedPath =
+    apiPrefix && path.startsWith("/api/")
+      ? `${apiPrefix}${path}`
+      : path;
   const configured = process.env.APP_URL;
   if (configured) {
     const base = new URL(configured);
-    return new URL(path, base).toString();
+    return new URL(resolvedPath, base).toString();
   }
   if (process.env.NODE_ENV === "production") {
     throw new HttpError(503, "APP_URL is not configured.");
   }
-  return new URL(path, request?.url ?? "http://localhost:3000").toString();
+  return new URL(resolvedPath, request?.url ?? "http://localhost:3000").toString();
 }
 
 export function escapeHtml(value: string) {
