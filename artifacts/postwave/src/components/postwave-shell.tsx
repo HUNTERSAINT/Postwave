@@ -6,7 +6,7 @@ import {
   ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, AtSign, Check, CheckCircle2,
   ChevronDown, CircleAlert, Clock3, ExternalLink, FileImage, Globe2, ImagePlus,
   Instagram, Link2, LoaderCircle, LogOut, Menu, MessageCircle, Music2, Plus, RefreshCw,
-  Send, Settings2, ShieldCheck, Sparkles, Trash2, UploadCloud, X, CalendarDays, ChevronLeft,
+  Send, Settings2, ShieldCheck, Sparkles, Trash2, UploadCloud, X, CalendarDays, CreditCard, ChevronLeft,
   ChevronRight, FileText, Save, Clock,
   Video,
 } from "lucide-react";
@@ -171,7 +171,7 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
 
 function AppFrame({ user, onLogout, children }: { user: User; onLogout: () => void; children: ReactNode }) {
   const [mobileMenu, setMobileMenu] = useState(false);
-  const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/calendar", label: "Calendar", icon: CalendarDays }, { href: "/drafts", label: "Drafts", icon: FileText }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }];
+  const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/calendar", label: "Calendar", icon: CalendarDays }, { href: "/drafts", label: "Drafts", icon: FileText }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }, { href: "/billing", label: "Billing", icon: CreditCard }];
   const pathname = usePathname() ?? "/dashboard";
   return <div className="min-h-[100dvh] bg-[#f5f9fa]">
     <header className="sticky top-0 z-20 border-b border-[#e0eaed] bg-[#f9fcfc]/95 backdrop-blur">
