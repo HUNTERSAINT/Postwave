@@ -46,6 +46,19 @@ async function failRenewal(userId: string, now: Date) {
 
 export async function processDueBilling(now = new Date()) {
   const { db } = getDatabase();
+
+  // Recover a renewal lock left behind if a worker process stopped mid-charge.
+  await db
+    .update(users)
+    .set({ billingPaused: false, updatedAt: now })
+    .where(
+      and(
+        eq(users.planSource, "paid"),
+        eq(users.billingPaused, true),
+        lte(users.billingNextChargeAt, new Date(now.getTime() - 15 * 60 * 1000)),
+      ),
+    );
+
   const due = await db
     .select({
       id: users.id,
