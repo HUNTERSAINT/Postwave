@@ -134,7 +134,7 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
     <main className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-5 pb-12 pt-4 md:grid-cols-[1fr_450px] md:px-10">
       <div className="hidden max-w-xl md:block">
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8ebe9] bg-white/80 px-3 py-1.5 text-xs font-semibold text-[#428982]"><span className="h-1.5 w-1.5 rounded-full bg-[#3bb7a3]" /> Your channels, in sync</div>
-        <h1 aria-label="One post. Every platform." className="font-display text-[54px] font-extrabold leading-[1.08] tracking-[-.055em] text-[#193a50]">One post.<br /><span className="text-[#751f3b]">Every platform.</span></h1>
+        <h1 aria-label="One post. Every platform." className="font-display text-[54px] font-extrabold leading-[1.08] tracking-[-.055em] text-[#193a50]">One post.<br /><span className="text-[#176f98]">Every platform.</span></h1>
         <p className="mt-5 max-w-md text-base leading-7 text-[#718696]">A quieter, clearer way to publish across the social accounts you own.</p>
         <div className="relative mt-12 max-w-md overflow-hidden rounded-[28px] border border-[#d8e8eb] bg-[#eaf5f5] p-6">
           <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full border-[32px] border-white/50" /><div className="absolute -bottom-16 left-24 h-44 w-44 rounded-full border-[25px] border-[#cce9e6]/70" />
@@ -206,6 +206,7 @@ function Dashboard() {
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   const publishedCount = posts.filter((post) => post.status === "published").length;
+  const activityPosts = posts.filter((post) => post.status.toLowerCase() !== "draft");
   return <>
     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div><p className="mb-2 text-xs font-bold uppercase tracking-[.15em] text-[#438e8b]">Your workspace</p><h1 className="font-display text-3xl font-extrabold tracking-[-.05em] text-[#193a50] sm:text-[36px]">Good to see you.</h1><p className="mt-2 text-sm text-[#778b98]">One clear place to publish across your channels.</p></div>
@@ -221,7 +222,7 @@ function Dashboard() {
       <Card>
         <div className="flex items-center justify-between border-b border-[#e7eef0] px-5 py-4"><div><h2 className="font-display font-bold text-[#29495c]">Recent posts</h2><p className="mt-0.5 text-xs text-[#8496a0]">Your latest publishing activity</p></div><a href="/history" className="text-xs font-bold text-[#287c91] hover:underline">View history <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></a></div>
         <div className="divide-y divide-[#edf2f3] px-5">
-          {loading ? <div className="grid gap-4 py-5">{[1, 2, 3].map((n) => <Skeleton key={n} className="h-12 w-full" />)}</div> : posts.length ? posts.slice(0, 5).map((post) => <a href="/history" key={post.id} className="flex items-start gap-3 py-4 hover:bg-[#fbfdfd]">
+          {loading ? <div className="grid gap-4 py-5">{[1, 2, 3].map((n) => <Skeleton key={n} className="h-12 w-full" />)}</div> : activityPosts.length ? activityPosts.slice(0, 5).map((post) => <a href="/history" key={post.id} className="flex items-start gap-3 py-4 hover:bg-[#fbfdfd]">
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#edf5f6] text-[#528491]"><Send className="h-4 w-4" /></span>
             <div className="min-w-0 flex-1"><p className="line-clamp-2 text-sm leading-5 text-[#3a586a]">{post.content || "Media post"}</p><div className="mt-1.5 text-[11px] text-[#8a9aa4]">{new Date(post.createdAt).toLocaleString()}</div></div><StatusPill status={post.status} />
           </a>) : !error && <div className="py-4"><EmptyState icon={Send} title="Your first post starts here" detail="Write once, choose your connected accounts, and publish." action={<a href="/compose" className="text-sm font-bold text-[#267b8c]">Start composing <ArrowRight className="ml-1 inline h-4 w-4" /></a>} /></div>}
