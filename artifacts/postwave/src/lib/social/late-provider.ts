@@ -85,8 +85,19 @@ class ZernioClient {
     }
 
     if (!response.ok) {
+      let providerBody = "";
+      try {
+        providerBody = (await response.text()).slice(0, 400);
+      } catch {
+        providerBody = "";
+      }
       logger.warn(
-        { providerStatus: response.status, providerOperation: method },
+        {
+          providerStatus: response.status,
+          providerOperation: method,
+          providerPath: path.split("?")[0],
+          providerBody,
+        },
         "Zernio API request was rejected",
       );
       throw providerError(response.status);
