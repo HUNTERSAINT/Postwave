@@ -42,7 +42,8 @@ Copy `.env.example` as a reference only; never commit an actual `.env` file.
 | `S3_PUBLIC_BASE_URL` | Public HTTPS URL prefix for uploaded media |
 | `PAYSTACK_SECRET_KEY` | Paystack API calls; configure on both web and worker services |\n| `PAYSTACK_PUBLIC_KEY` | Reserved for client-side Paystack integrations; hosted checkout currently uses the server API |
 | `EXCHANGE_RATE_API_KEY` | Optional ExchangeRate-API key; open.er-api.com is used as the fallback |
-| `TRIAL_LENGTH_DAYS` | Reserved for Phase 3 trial configuration |
+| `TRIAL_LENGTH_DAYS` | Length of the free Pro trial in days (default 7) |
+| `ADMIN_EMAILS` | Comma-separated emails promoted to admin after a verified sign-in; the dashboard is at `/admin` |
 
 When previewing inside Replit, Postwave intentionally refuses to use a Replit-provided database URL. To use your own external PostgreSQL database from that development environment, explicitly set `POSTWAVE_ALLOW_EXTERNAL_DATABASE=true`; this is not needed on Railway.
 

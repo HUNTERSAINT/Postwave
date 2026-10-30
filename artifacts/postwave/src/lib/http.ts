@@ -1,4 +1,4 @@
-import { ZodError, type ZodType } from "zod";
+import { z, ZodError, type ZodType } from "zod";
 import { logger } from "@/lib/logger";
 
 export class HttpError extends Error {
@@ -62,4 +62,10 @@ export function errorResponse(error: unknown) {
 
 export function errorMessage(error: unknown, fallback: string) {
   return error instanceof HttpError ? error.message : fallback;
+}
+
+export function parseUuid(value: string) {
+  const parsed = z.string().uuid().safeParse(value);
+  if (!parsed.success) throw new HttpError(400, "That id is not valid.");
+  return parsed.data;
 }
