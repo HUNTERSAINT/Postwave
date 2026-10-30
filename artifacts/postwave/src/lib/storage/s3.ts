@@ -58,7 +58,7 @@ function getS3Client(config: StorageConfig) {
     (globals.__postwaveS3 = new S3Client({
       region: config.region,
       endpoint: config.endpoint,
-      forcePathStyle: false,
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
       credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID!,
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
