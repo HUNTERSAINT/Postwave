@@ -85,6 +85,6 @@ export async function completeBillingTransaction(
       })
       .where(eq(users.id, pending.userId));
 
-    return { activated: true, nextChargeAt };
+    return { activated: true, reason: "activated", nextChargeAt };
   });
 }
