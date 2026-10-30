@@ -7,6 +7,8 @@ import { appUrl, escapeHtml, sendTransactionalEmail } from "@/lib/auth/email";
 import { getDatabase } from "@/lib/db";
 import { errorResponse, HttpError, jsonResponse, parseJson } from "@/lib/http";
 import { hashPassword } from "@/lib/auth/password";
+import { logger } from "@/lib/logger";
+import { isDisposableEmail, recordTrialClaim } from "@/lib/trial";
 
 const schema = z.object({
   email: z.string().trim().email().max(320),
@@ -23,6 +25,13 @@ export async function POST(request: Request) {
     const input = await parseJson(request, schema);
     const email = input.email.toLowerCase();
     await enforceRateLimit(request, "auth-signup-email", 3, 60 * 60, email);
+
+    if (isDisposableEmail(email)) {
+      throw new HttpError(
+        400,
+        "Please sign up with a permanent email address, not a temporary one.",
+      );
+    }
 
     const { db } = getDatabase();
     const [existing] = await db
@@ -50,6 +59,16 @@ export async function POST(request: Request) {
           .where(eq(users.email, email))
           .limit(1);
         userId = raceWinner?.id;
+      } else {
+        // Remember who asked for a trial; it starts once the email is verified.
+        try {
+          await recordTrialClaim(db, { userId, email, request });
+        } catch (error) {
+          logger.warn(
+            { errorName: error instanceof Error ? error.name : "UnknownError" },
+            "Trial claim could not be recorded at signup",
+          );
+        }
       }
     }
 

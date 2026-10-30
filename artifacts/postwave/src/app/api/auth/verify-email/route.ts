@@ -5,6 +5,8 @@ import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { hashAuthToken } from "@/lib/auth/session";
 import { getDatabase } from "@/lib/db";
 import { errorResponse, HttpError, jsonResponse, parseJson } from "@/lib/http";
+import { logger } from "@/lib/logger";
+import { startTrialIfEligible } from "@/lib/trial";
 
 const schema = z.object({ token: z.string().min(20).max(256) });
 
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
           ),
         )
         .limit(1);
-      if (!token) return false;
+      if (!token) return null;
 
       const [consumed] = await tx
         .update(authTokens)
@@ -43,18 +45,30 @@ export async function POST(request: Request) {
           ),
         )
         .returning({ userId: authTokens.userId });
-      if (!consumed) return false;
+      if (!consumed) return null;
       await tx
         .update(users)
         .set({ emailVerifiedAt: now })
         .where(eq(users.id, token.userId));
-      return true;
+      return token.userId;
     });
 
     if (!verified) {
       throw new HttpError(400, "This verification link is invalid or has expired.");
     }
-    return jsonResponse({ ok: true });
+
+    // A failed trial start must never block email verification.
+    let trialStarted = false;
+    try {
+      const trial = await startTrialIfEligible(db, verified, now);
+      trialStarted = trial.started;
+    } catch (error) {
+      logger.error(
+        { errorName: error instanceof Error ? error.name : "UnknownError" },
+        "Trial could not be started after email verification",
+      );
+    }
+    return jsonResponse({ ok: true, trialStarted });
   } catch (error) {
     return errorResponse(error);
   }

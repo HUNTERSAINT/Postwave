@@ -4,6 +4,7 @@ import { oauthStates } from "@/db/schema";
 import { createOpaqueToken, requireUser } from "@/lib/auth/session";
 import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { appUrl } from "@/lib/auth/email";
+import { assertCanConnectAccount } from "@/lib/plan-guards";
 import { getDatabase } from "@/lib/db";
 import { errorResponse, jsonResponse, parseJson } from "@/lib/http";
 import { ensureZernioProfile, lateProvider } from "@/lib/social/late-provider";
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     const user = await requireUser();
     await enforceRateLimit(request, "accounts-connect-user", 10, 60 * 60, user.id);
     const input = await parseJson(request, schema);
+    await assertCanConnectAccount(user.id);
     const profileId = await ensureZernioProfile(user);
     const state = await createOpaqueToken();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);

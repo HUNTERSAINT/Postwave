@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { requireUser } from "@/lib/auth/session";
+import { assertPostAllowed } from "@/lib/plan-guards";
 import { getDatabase } from "@/lib/db";
 import { errorResponse, HttpError, jsonResponse, parseJson } from "@/lib/http";
 import { getPublishQueue } from "@/lib/queue/publish-queue";
@@ -178,6 +179,7 @@ export async function POST(request: Request) {
       }
     }
     const { db } = getDatabase();
+    await assertPostAllowed(user.id, input.intent);
 
     const accounts = await db
       .select({
@@ -185,9 +187,22 @@ export async function POST(request: Request) {
         providerAccountId: socialAccounts.zernioAccountId,
         platform: socialAccounts.platform,
         isActive: socialAccounts.isActive,
+        planPaused: socialAccounts.planPaused,
       })
       .from(socialAccounts)
       .where(eq(socialAccounts.userId, user.id));
+    if (
+      input.intent !== "draft" &&
+      accounts.some(
+        (account) =>
+          accountIds.includes(account.id) && account.isActive && account.planPaused,
+      )
+    ) {
+      throw new HttpError(
+        403,
+        "One or more selected accounts are paused because they are over your plan's account limit. Upgrade or choose other accounts.",
+      );
+    }
     const accountMap = new Map(
       accounts
       .filter((account) => account.isActive)
@@ -256,6 +271,7 @@ export async function POST(request: Request) {
             status,
             scheduledAt,
             timezone,
+            submittedAt: input.intent === "draft" ? null : new Date(),
             updatedAt: new Date(),
           })
           .where(
@@ -288,6 +304,7 @@ export async function POST(request: Request) {
           status,
           scheduledAt,
           timezone,
+          submittedAt: input.intent === "draft" ? null : new Date(),
         });
       }
       if (selectedAccounts.length) {

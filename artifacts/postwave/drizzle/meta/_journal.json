@@ -22,6 +22,13 @@
       "when": 1793319659631,
       "tag": "0002_phase3_billing_trials_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793400000000,
+      "tag": "0003_trial_claims_verification",
+      "breakpoints": true
     }
   ]
 }
