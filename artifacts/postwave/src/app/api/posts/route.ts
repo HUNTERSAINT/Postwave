@@ -179,7 +179,7 @@ export async function POST(request: Request) {
       }
     }
     const { db } = getDatabase();
-    await assertPostAllowed(user.id, input.intent);
+    await assertPostAllowed(user.id, input.intent ?? "publish_now");
 
     const accounts = await db
       .select({

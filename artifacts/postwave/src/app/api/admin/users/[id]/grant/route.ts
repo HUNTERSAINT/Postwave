@@ -35,8 +35,8 @@ export async function POST(
       plan: input.plan,
       duration: input.duration,
       note: input.note || null,
-      pauseBilling: input.pauseBilling,
-      confirmPaidOverride: input.confirmPaidOverride,
+      pauseBilling: input.pauseBilling ?? true,
+      confirmPaidOverride: input.confirmPaidOverride ?? false,
     });
 
     if (result.needsConfirmation) {
