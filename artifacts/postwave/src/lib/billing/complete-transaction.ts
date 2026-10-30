@@ -2,6 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { billingTransactions, users } from "@/db/schema";
 import type { getDatabase } from "@/lib/db";
 import type { PaystackTransaction } from "@/lib/billing/paystack";
+import { sendEmailOnce } from "@/lib/notifications";
+import { logger } from "@/lib/logger";
 
 type Database = ReturnType<typeof getDatabase>["db"];
 
@@ -22,7 +24,7 @@ export async function completeBillingTransaction(
 ) {
   if (payment.status !== "success") return { activated: false, reason: "not_successful" };
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [pending] = await tx
       .select()
       .from(billingTransactions)
@@ -87,4 +89,43 @@ export async function completeBillingTransaction(
 
     return { activated: true, reason: "activated", nextChargeAt };
   });
+
+  if (result.reason === "activated" || result.reason === "already_processed") {
+    try {
+      const [transaction] = await db
+        .select()
+        .from(billingTransactions)
+        .where(eq(billingTransactions.reference, payment.reference))
+        .limit(1);
+      if (transaction) {
+        const [user] = await db
+          .select({ id: users.id, email: users.email, name: users.name })
+          .from(users)
+          .where(eq(users.id, transaction.userId))
+          .limit(1);
+        if (user) {
+          const amount = (transaction.amountMinor / 100).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+          await sendEmailOnce(db, user, `billing-receipt-${payment.reference}`, {
+            subject: "Your Postwave payment receipt",
+            paragraphs: [
+              `We received your payment of ${transaction.currency} ${amount} for the ${transaction.plan} plan.`,
+              `Exchange rate used: 1 USD = ${Number(transaction.rate).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${transaction.currency}. The rate and amount were locked when you started checkout.`,
+              `Payment reference: ${payment.reference}. Your plan is active for the current 30-day billing period.`,
+            ],
+            action: { label: "Manage billing", path: "/billing" },
+          });
+        }
+      }
+    } catch (error) {
+      logger.warn(
+        { errorName: error instanceof Error ? error.name : "UnknownError" },
+        "Postwave payment receipt could not be sent",
+      );
+    }
+  }
+
+  return result;
 }
