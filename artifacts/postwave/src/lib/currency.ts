@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { exchangeRates } from "@/db/schema";
 import type { getDatabase } from "@/lib/db";
 import { HttpError } from "@/lib/http";
@@ -50,21 +50,23 @@ export async function refreshExchangeRates(
   const dayStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
-  const [manualRateToday] = await db
-    .select({ id: exchangeRates.id })
+  const [latestManual] = await db
+    .select({ fetchedAt: exchangeRates.fetchedAt })
     .from(exchangeRates)
-    .where(eq(exchangeRates.source, "manual"))
+    .where(
+      and(
+        eq(exchangeRates.baseCurrency, "USD"),
+        eq(exchangeRates.source, "manual"),
+      ),
+    )
+    .orderBy(desc(exchangeRates.fetchedAt))
     .limit(1);
-  if (!options.force && manualRateToday) {
-    const [latestManual] = await db
-      .select({ fetchedAt: exchangeRates.fetchedAt })
-      .from(exchangeRates)
-      .where(eq(exchangeRates.source, "manual"))
-      .orderBy(desc(exchangeRates.fetchedAt))
-      .limit(1);
-    if (latestManual && latestManual.fetchedAt >= dayStart) {
-      return { updated: false, reason: "manual_override_today" };
-    }
+  if (
+    !options.force &&
+    latestManual?.fetchedAt &&
+    latestManual.fetchedAt >= dayStart
+  ) {
+    return { updated: false, reason: "manual_override_today" };
   }
 
   const [latest] = await db
@@ -146,6 +148,10 @@ export async function getCurrencyRate(db: Database, currency: Currency) {
   if (currency === "USD") {
     return { currency, rate: 1, fetchedAt: new Date(), source: "base" };
   }
+  const whereCurrency = and(
+    eq(exchangeRates.baseCurrency, "USD"),
+    eq(exchangeRates.currency, currency),
+  );
   const [saved] = await db
     .select({
       rate: exchangeRates.rate,
@@ -153,9 +159,7 @@ export async function getCurrencyRate(db: Database, currency: Currency) {
       source: exchangeRates.source,
     })
     .from(exchangeRates)
-    .where(
-      eq(exchangeRates.currency, currency),
-    )
+    .where(whereCurrency)
     .limit(1);
   if (!saved) {
     await refreshExchangeRates(db);
@@ -166,7 +170,7 @@ export async function getCurrencyRate(db: Database, currency: Currency) {
         source: exchangeRates.source,
       })
       .from(exchangeRates)
-      .where(eq(exchangeRates.currency, currency))
+      .where(whereCurrency)
       .limit(1);
     if (!retried) {
       throw new HttpError(503, "Exchange rates are temporarily unavailable.");
