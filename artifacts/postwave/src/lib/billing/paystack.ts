@@ -89,7 +89,7 @@ export function initializePaystackTransaction(input: {
       reference: input.reference,
       callback_url: input.callbackUrl,
       metadata: input.metadata,
-      channels: ["card", "bank", "bank_transfer", "ussd", "mobile_money"],
+      channels: ["card"],
     },
   });
 }
