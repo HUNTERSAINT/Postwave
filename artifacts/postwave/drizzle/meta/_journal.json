@@ -15,6 +15,13 @@
       "when": 1793234212887,
       "tag": "0001_phase2_scheduling_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793319659631,
+      "tag": "0002_phase3_billing_trials_admin",
+      "breakpoints": true
     }
   ]
 }
