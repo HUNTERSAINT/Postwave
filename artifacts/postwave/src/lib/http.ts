@@ -53,10 +53,25 @@ export function errorResponse(error: unknown) {
     );
   }
 
-  logger.error(
-    { errorName: error instanceof Error ? error.name : "UnknownError" },
-    "Postwave request failed",
-  );
+  const detail =
+    error instanceof Error
+      ? {
+          errorName: error.name,
+          errorMessage: error.message
+            .replace(/(key|token|secret|password|authorization)[^\s,;]*/gi, "$1[redacted]")
+            .slice(0, 400),
+          errorCause:
+            error.cause instanceof Error
+              ? error.cause.message.slice(0, 300)
+              : undefined,
+          errorStack: error.stack
+            ?.split("\n")
+            .slice(1, 4)
+            .map((line) => line.trim())
+            .join(" | "),
+        }
+      : { errorName: "UnknownError" };
+  logger.error(detail, "Postwave request failed");
   return jsonResponse({ message: "Something went wrong. Please try again." }, 500);
 }
 

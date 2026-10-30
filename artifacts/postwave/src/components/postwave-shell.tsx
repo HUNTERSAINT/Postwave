@@ -95,7 +95,33 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState("");
   const [token, setToken] = useState("");
-  useEffect(() => { setToken(new URLSearchParams(window.location.search).get("token") || ""); }, []);
+  const [fromLink, setFromLink] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const autoVerifyStarted = useRef(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linkToken = params.get("token") || "";
+    if (linkToken) {
+      setToken(linkToken);
+      setFromLink(true);
+      // Keep the token out of the address bar, history and screenshots.
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    if (path === "/login" && params.get("verified") === "1") {
+      setSuccess("Email confirmed. Sign in to continue.");
+    }
+    if (path === "/verify-email" && linkToken && !autoVerifyStarted.current) {
+      autoVerifyStarted.current = true;
+      setVerifying(true);
+      api("/api/auth/verify-email", json({ token: linkToken }))
+        .then(() => { window.location.replace("/login?verified=1"); })
+        .catch((error) => {
+          setVerifying(false);
+          setFromLink(false);
+          setMessage(error instanceof Error ? error.message : "This verification link is invalid or has expired.");
+        });
+    }
+  }, [path]);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setBusy(true); setMessage(""); setSuccess("");
     const data = new FormData(event.currentTarget);
@@ -110,7 +136,8 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
       } else if (path === "/verify-email") {
         const confirmationToken = String(data.get("token") || token);
         await api("/api/auth/verify-email", json({ token: confirmationToken }));
-        setSuccess("Email confirmed. You can now sign in.");
+        window.location.replace("/login?verified=1");
+        return;
       } else if (path === "/forgot-password") {
         const response = await api<{ message?: string }>("/api/auth/forgot-password", json({ email }));
         setSuccess(response.message || "If an account exists for that email, reset instructions are on their way.");
@@ -125,7 +152,7 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
   const details: Record<string, { overline: string; title: string; copy: string; submit: string }> = {
     "/login": { overline: "Welcome back", title: "Your next post starts here.", copy: "Sign in to pick up right where your audience is.", submit: "Sign in" },
     "/signup": { overline: "A better way to publish", title: "Make every post go further.", copy: "Create your Postwave workspace and bring your channels together.", submit: "Create account" },
-    "/verify-email": { overline: "One last step", title: "Confirm your email.", copy: "Paste the verification token from your email to activate your account.", submit: "Verify email" },
+    "/verify-email": { overline: "One last step", title: "Confirm your email.", copy: "Open the link in your verification email to activate your account.", submit: "Verify email" },
     "/forgot-password": { overline: "Account recovery", title: "Reset your password.", copy: "Enter your email and we'll send reset instructions if an account matches.", submit: "Send reset link" },
     "/reset-password": { overline: "Account recovery", title: "Choose a new password.", copy: "Set a secure password to get back to publishing.", submit: "Update password" },
   };
@@ -155,10 +182,11 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
         <form onSubmit={submit} className="mt-7 grid gap-4">
           {path === "/signup" && <Field label="Your name" name="name" placeholder="Name as your audience knows you" autoComplete="name" required />}
           {(path === "/login" || path === "/signup" || path === "/forgot-password") && <Field label="Email address" name="email" type="email" placeholder="you@example.com" autoComplete="email" required />}
-          {isToken && <Field label="Email token" name="token" value={token} onChange={(event) => setToken(event.target.value)} placeholder="Paste the token from your email" required />}
+          {isToken && !fromLink && <Field label="Email token" name="token" value={token} onChange={(event) => setToken(event.target.value)} placeholder="Paste the token from your email" required />}
           {(path === "/login" || path === "/signup" || path === "/reset-password") && <Field label="Password" name="password" type="password" placeholder={path === "/login" ? "Your password" : "At least 8 characters"} autoComplete={path === "/login" ? "current-password" : "new-password"} minLength={8} required />}
+          {verifying && <Notice tone="success">Confirming your email…</Notice>}
           {message && <Notice>{message}</Notice>}{success && <Notice tone="success">{success}</Notice>}
-          <Button type="submit" disabled={busy} className="mt-1 w-full">{busy && <LoaderCircle className="h-4 w-4 animate-spin" />}{d.submit}<ArrowRight className="h-4 w-4" /></Button>
+          <Button type="submit" disabled={busy || verifying} className="mt-1 w-full">{busy && <LoaderCircle className="h-4 w-4 animate-spin" />}{d.submit}<ArrowRight className="h-4 w-4" /></Button>
         </form>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-[#758a97]">
           {path === "/login" && <><a className="font-semibold text-[#227a91] hover:underline" href="/forgot-password">Forgot password?</a><span>New to Postwave? <a className="font-bold text-[#227a91] hover:underline" href="/signup">Create account</a></span></>}
