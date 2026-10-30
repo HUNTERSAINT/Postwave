@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { exchangeRates } from "@/db/schema";
 import type { getDatabase } from "@/lib/db";
 import { HttpError } from "@/lib/http";
@@ -60,7 +60,7 @@ export async function refreshExchangeRates(
       .select({ fetchedAt: exchangeRates.fetchedAt })
       .from(exchangeRates)
       .where(eq(exchangeRates.source, "manual"))
-      .orderBy(exchangeRates.fetchedAt)
+      .orderBy(desc(exchangeRates.fetchedAt))
       .limit(1);
     if (latestManual && latestManual.fetchedAt >= dayStart) {
       return { updated: false, reason: "manual_override_today" };
@@ -71,7 +71,7 @@ export async function refreshExchangeRates(
     .select({ fetchedAt: exchangeRates.fetchedAt })
     .from(exchangeRates)
     .where(eq(exchangeRates.baseCurrency, "USD"))
-    .orderBy(exchangeRates.fetchedAt)
+    .orderBy(desc(exchangeRates.fetchedAt))
     .limit(1);
   if (
     !options.force &&

@@ -51,9 +51,9 @@ const DISPOSABLE_DOMAINS = [
   "33mail.com",
 ];
 
-/** Trial length in days. Override with the TRIAL_DAYS environment variable. */
+/** Trial length in days. Override with the TRIAL_LENGTH_DAYS environment variable. */
 export function trialDays() {
-  const configured = Number(process.env.TRIAL_DAYS);
+  const configured = Number(process.env.TRIAL_LENGTH_DAYS);
   return Number.isInteger(configured) && configured > 0 && configured <= 90
     ? configured
     : 7;

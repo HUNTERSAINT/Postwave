@@ -3,6 +3,7 @@ import { POSTWAVE_QUEUE_NAME, type PublishJobData } from "@/lib/queue/publish-qu
 import { getRedisConnection } from "@/lib/queue/connection";
 import { logger } from "@/lib/logger";
 import { processPublishJob } from "@/lib/worker/publish-post";
+import { runLifecycleJobs } from "@/lib/worker/lifecycle-jobs";
 import { enqueueDueScheduledPosts } from "@/lib/worker/schedule-due-posts";
 
 const connection = getRedisConnection();
@@ -59,8 +60,28 @@ const scheduledPostScanTimer = setInterval(
 );
 scheduledPostScanTimer.unref();
 
+let runningLifecycleJobs = false;
+async function runPeriodicAccountJobs() {
+  if (runningLifecycleJobs) return;
+  runningLifecycleJobs = true;
+  try {
+    await runLifecycleJobs();
+  } finally {
+    runningLifecycleJobs = false;
+  }
+}
+
+// Exchange rates, trial and grant emails/expiry. Every step is idempotent,
+// so running hourly (and once shortly after start) is safe.
+const lifecycleStartTimer = setTimeout(() => void runPeriodicAccountJobs(), 10_000);
+lifecycleStartTimer.unref();
+const lifecycleTimer = setInterval(() => void runPeriodicAccountJobs(), 60 * 60 * 1000);
+lifecycleTimer.unref();
+
 const shutdown = async () => {
   clearInterval(scheduledPostScanTimer);
+  clearInterval(lifecycleTimer);
+  clearTimeout(lifecycleStartTimer);
   await worker.close();
   await connection.quit();
 };
