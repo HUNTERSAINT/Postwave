@@ -9,6 +9,8 @@ type Plan = {
   billingCurrency?: string | null;
   billingNextChargeAt?: string | null;
   billingPaused?: boolean;
+  grantExpiresAt?: string | null;
+  trialDaysRemaining?: number;
 };
 
 type CurrencyPayload = {
@@ -130,6 +132,8 @@ export default function BillingPage() {
               <p className="text-xs font-bold uppercase tracking-wider text-[#8397a2]">Your current plan</p>
               <p className="mt-1 text-xl font-extrabold capitalize">{plan?.plan ?? "Loading…"}</p>
               <p className="mt-1 text-xs text-[#718696]">{plan?.planStatus ?? ""} · {plan?.planSource === "admin_grant" ? "Complimentary access" : plan?.planSource ?? ""}</p>
+              {plan?.planSource === "admin_grant" && <p className="mt-2 inline-block rounded-full bg-[#effaf6] px-3 py-1 text-xs font-bold text-[#246c5b]">Granted by Postwave · {plan.grantExpiresAt ? `until ${new Date(plan.grantExpiresAt).toLocaleDateString()}` : "no end date"}</p>}
+              {plan?.planSource === "trial" && <p className="mt-2 inline-block rounded-full bg-[#f0f8fb] px-3 py-1 text-xs font-bold text-[#346a80]">Free Pro trial · {plan.trialDaysRemaining ?? 0} days left</p>}
             </div>
             {isPaid && <button disabled={busy !== ""} onClick={() => void cancelRenewal()} className="rounded-xl border border-[#d8e6eb] px-4 py-2.5 text-sm font-semibold text-[#48677a] disabled:opacity-50">{busy === "cancel" ? "Cancelling…" : "Cancel renewal"}</button>}
           </div>

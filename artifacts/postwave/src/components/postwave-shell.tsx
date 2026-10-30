@@ -11,6 +11,8 @@ import {
   Video,
 } from "lucide-react";
 
+import { PlanBanner } from "@/components/plan-banner";
+
 type Account = { id: string; platform: string; username?: string; displayName?: string; isActive: boolean };
 type MediaAsset = { id: string; key?: string; publicUrl: string; contentType: string; size: number };
 type Target = { platform: string; accountId: string; status: string; errorMessage?: string | null; platformPostUrl?: string | null };
@@ -53,7 +55,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
   </a>;
 }
 function Footer() {
-  return <footer className="mt-auto border-t border-[#e2ecef] px-5 py-5 text-center text-xs text-[#8093a0]">Postwave by Mazi Saint Concepts</footer>;
+  return <footer className="mt-auto border-t border-[#e2ecef] px-5 py-5 text-center text-xs text-[#8093a0]"><a className="hover:underline" href="/pricing">Pricing</a> · <a className="hover:underline" href="/privacy">Privacy</a> · <a className="hover:underline" href="/terms">Terms</a> · <a className="hover:underline" href="/data-deletion">Data deletion</a><br />Postwave by Mazi Saint Concepts</footer>;
 }
 function Notice({ children, tone = "error" }: { children: ReactNode; tone?: "error" | "success" | "info" }) {
   const colors = tone === "success" ? "border-[#b9e4d9] bg-[#effaf6] text-[#246c5b]" : tone === "info" ? "border-[#cfe3eb] bg-[#f0f8fb] text-[#346a80]" : "border-[#f0c9c1] bg-[#fff5f2] text-[#a34c3d]";
@@ -187,7 +189,7 @@ function AppFrame({ user, onLogout, children }: { user: User; onLogout: () => vo
       </div>
       {mobileMenu && <nav className="grid grid-cols-2 gap-2 border-t border-[#e0eaed] p-3 md:hidden">{items.map(({ href, label, icon: Icon }) => <a key={href} href={href} className={`flex items-center gap-2 rounded-xl p-3 text-sm font-semibold ${pathname === href ? "bg-[#e6f3f2] text-[#216f79]" : "text-[#647d8a]"}`}><Icon className="h-4 w-4" />{label}</a>)}</nav>}
     </header>
-    <main className="mx-auto min-h-[calc(100dvh-137px)] max-w-[1240px] px-4 pb-12 pt-8 sm:px-7 lg:px-10"><div className="page-in">{children}</div></main>
+    <main className="mx-auto min-h-[calc(100dvh-137px)] max-w-[1240px] px-4 pb-12 pt-8 sm:px-7 lg:px-10"><div className="page-in"><PlanBanner />{children}</div></main>
     <Footer />
   </div>;
 }

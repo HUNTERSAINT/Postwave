@@ -8,5 +8,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 1,
     },
+    ...["pricing", "privacy", "terms", "data-deletion"].map((path) => ({
+      url: `${baseUrl}/${path}`,
+      changeFrequency: "monthly" as const,
+      priority: path === "pricing" ? 0.8 : 0.4,
+    })),
   ];
 }

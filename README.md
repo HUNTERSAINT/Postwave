@@ -43,6 +43,7 @@ Copy `.env.example` as a reference only; never commit an actual `.env` file.
 | `PAYSTACK_SECRET_KEY` | Paystack API calls; configure on both web and worker services |\n| `PAYSTACK_PUBLIC_KEY` | Reserved for client-side Paystack integrations; hosted checkout currently uses the server API |
 | `EXCHANGE_RATE_API_KEY` | Optional ExchangeRate-API key; open.er-api.com is used as the fallback |
 | `TRIAL_LENGTH_DAYS` | Length of the free Pro trial in days (default 7) |
+| `SUPPORT_EMAIL` | Public contact email shown on the privacy, terms and data-deletion pages |
 | `ADMIN_EMAILS` | Comma-separated emails promoted to admin after a verified sign-in; the dashboard is at `/admin` |
 
 When previewing inside Replit, Postwave intentionally refuses to use a Replit-provided database URL. To use your own external PostgreSQL database from that development environment, explicitly set `POSTWAVE_ALLOW_EXTERNAL_DATABASE=true`; this is not needed on Railway.
@@ -67,3 +68,9 @@ The web process listens on `PORT` (default `3000`). The background worker is a s
 - Media is uploaded directly to configured S3-compatible storage. Server-side checks enforce type and size limits and validate file signatures.
 - Logs omit request bodies, tokens, passwords, and provider credentials.
 \n\n## Billing setup\n\n- Configure `PAYSTACK_SECRET_KEY` on both Railway services. Never put it in client-side code or commit it.\n- Configure the Paystack webhook URL as `https://YOUR_DOMAIN/api/webhooks/paystack`. Paystack signs webhook requests with `x-paystack-signature`; Postwave verifies the HMAC before processing.\n- Billing checkout currently uses Paystack card payments in NGN, USD, GHS, ZAR, or KES. GBP and EUR remain supported as display currencies but cannot be selected for Paystack checkout.\n- The worker charges reusable card authorizations every 30 days using the current saved exchange rate. Failed renewals are retried daily up to three attempts; after the third failure the account returns to Free and excess accounts/scheduled posts are paused, not deleted.\n- If the authorization is not reusable, access remains active for the paid 30-day period and then returns to Free. Users can cancel automatic renewal from `/billing`; access remains until the paid period ends.\n- The billing page is available at `/billing`.\n
+## Public pages and admin
+
+- `/pricing` shows public prices converted from USD at the latest saved exchange rate, with a currency selector.
+- `/privacy`, `/terms` and `/data-deletion` are the legal pages (the data-deletion URL is what Meta asks for). Review them with a lawyer before launch.
+- `/admin` is the admin dashboard: user search, grant any plan (with note, duration and pause/keep billing for paying users), revoke grants, extend trials, stats, failed posts, audit log and a manual exchange-rate override. Set `ADMIN_EMAILS` to your email, sign in with that verified address, and open `/admin`.
+- Trials start when a new user verifies their email (`TRIAL_LENGTH_DAYS`, default 7). The worker sends trial and grant emails and downgrades expired trials hourly.
