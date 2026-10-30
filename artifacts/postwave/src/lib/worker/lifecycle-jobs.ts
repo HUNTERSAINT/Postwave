@@ -1,6 +1,7 @@
 import { and, eq, gt, isNotNull, lt, lte } from "drizzle-orm";
 import { billingQuotes, users } from "@/db/schema";
 import { refreshExchangeRates } from "@/lib/currency";
+import { processDueBilling } from "@/lib/worker/billing-jobs";
 import { getDatabase } from "@/lib/db";
 import { expireDueGrants } from "@/lib/grants";
 import { logger } from "@/lib/logger";
@@ -197,4 +198,5 @@ export async function runLifecycleJobs(now = new Date()) {
   await safely("trials", () => processTrials(now));
   await safely("grants", () => processGrants(now));
   await safely("cleanup", () => cleanUp(now));
+  await safely("subscription-renewals", () => processDueBilling(now));
 }
