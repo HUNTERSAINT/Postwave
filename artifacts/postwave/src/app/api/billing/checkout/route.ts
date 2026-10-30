@@ -41,6 +41,9 @@ export async function POST(request: Request) {
     const { db } = getDatabase();
     const [account] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
     if (!account) throw new HttpError(404, "Account not found.");
+    if (account.paidPlan !== "free" && account.billingNextChargeAt && account.billingNextChargeAt > new Date() && account.planSource === "paid") {
+      throw new HttpError(409, "You already have an active paid subscription. Cancel renewal or wait until the current period ends before purchasing another plan.");
+    }
     if (account.planSource === "admin_grant" && (!account.grantExpiresAt || account.grantExpiresAt > new Date())) {
       throw new HttpError(409, "Your account already has an active complimentary plan.");
     }
@@ -109,7 +112,7 @@ export async function POST(request: Request) {
         quoteExpiresAt: expiresAt,
       });
     } catch (error) {
-      await db.update(billingTransactions).set({ status: "failed", failureMessage: "Paystack initialization failed." }).where(eq(billingTransactions.reference, reference));
+      await db.update(billingTransactions).set({ failureMessage: "Paystack initialization did not return a confirmed checkout response." }).where(eq(billingTransactions.reference, reference));
       throw error;
     }
   } catch (error) {
