@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { billingQuotes, billingTransactions, users } from "@/db/schema";
+import { billingTransactions, users } from "@/db/schema";
 import type { getDatabase } from "@/lib/db";
 import type { PaystackTransaction } from "@/lib/billing/paystack";
 
@@ -84,17 +84,6 @@ export async function completeBillingTransaction(
         updatedAt: now,
       })
       .where(eq(users.id, pending.userId));
-
-    await tx
-      .update(billingQuotes)
-      .set({ usedAt: now })
-      .where(
-        and(
-          eq(billingQuotes.userId, pending.userId),
-          eq(billingQuotes.plan, pending.plan),
-          eq(billingQuotes.usedAt, null as never),
-        ),
-      );
 
     return { activated: true, nextChargeAt };
   });
