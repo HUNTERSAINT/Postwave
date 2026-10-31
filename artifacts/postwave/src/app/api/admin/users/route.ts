@@ -1,5 +1,5 @@
-import { desc, ilike, or } from "drizzle-orm";
-import { users } from "@/db/schema";
+import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { socialAccounts, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/admin";
 import { getDatabase } from "@/lib/db";
 import { errorResponse, jsonResponse } from "@/lib/http";
@@ -30,8 +30,31 @@ export async function GET(request: Request) {
       .orderBy(desc(users.createdAt))
       .limit(25);
 
+    const accountRows = rows.length
+      ? await db
+          .select({
+            userId: socialAccounts.userId,
+            platform: socialAccounts.platform,
+            username: socialAccounts.username,
+            displayName: socialAccounts.displayName,
+          })
+          .from(socialAccounts)
+          .where(
+            and(
+              eq(socialAccounts.isActive, true),
+              inArray(socialAccounts.userId, rows.map((user) => user.id)),
+            ),
+          )
+      : [];
+
     return jsonResponse({
       users: rows.map((user) => ({
+        accounts: accountRows
+          .filter((account) => account.userId === user.id)
+          .map((account) => ({
+            platform: account.platform,
+            name: account.username || account.displayName || "",
+          })),
         id: user.id,
         email: user.email,
         name: user.name,

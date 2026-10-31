@@ -7,6 +7,7 @@ type Stats = {
   conversion: { trialsStarted: number; converted: number; rate: number };
   revenue: { currency: string; amountMinor: number; payments: number }[];
   failedPostsLast7Days: number;
+  linkedAccounts: { total: number; users: number; byPlatform: { platform: string; count: number }[] };
   exchangeRates: { currency: string; rate: number; source: string; fetchedAt: string }[];
 };
 type AdminUser = {
@@ -14,6 +15,7 @@ type AdminUser = {
   plan: string; planStatus: string; planSource: string; paidPlan: string; hasPaidSubscription: boolean;
   trialEndsAt: string | null; trialSuspicious: boolean; grantExpiresAt: string | null; grantNote: string | null;
   grantBillingPaused: boolean; createdAt: string;
+  accounts: { platform: string; name: string }[];
 };
 type AuditEntry = { id: string; action: string; plan: string | null; duration: string | null; note: string | null; createdAt: string; adminEmail: string; userEmail: string };
 type Failure = { id: string; platform: string; errorMessage: string | null; attempts: number; updatedAt: string; content: string; userEmail: string };
@@ -185,6 +187,7 @@ export default function AdminPage() {
             <Stat label="Complimentary" value={stats.users.granted} />
             <Stat label="Free" value={stats.users.free} />
             <Stat label="Trial → paid" value={`${stats.conversion.rate}%`} hint={`${stats.conversion.converted} of ${stats.conversion.trialsStarted} trials`} />
+            <Stat label="Linked accounts" value={stats.linkedAccounts.total} hint={`${stats.linkedAccounts.users} users · ${stats.linkedAccounts.byPlatform.map((row) => `${row.platform} ${row.count}`).join(", ") || "none yet"}`} />
             <Stat label="Failed posts (7d)" value={stats.failedPostsLast7Days} />
             <Stat label="Revenue" value={stats.revenue.length ? stats.revenue.map((row) => money(row.amountMinor, row.currency)).join(" · ") : "—"} hint="Successful payments only" />
           </div>
@@ -198,12 +201,13 @@ export default function AdminPage() {
           <button className="rounded-xl bg-[#176f98] px-4 text-sm font-bold text-white hover:bg-[#125c7d]">Search</button>
         </form>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead><tr className="border-b border-[#e2edf0]"><th className={th}>User</th><th className={th}>Plan</th><th className={th}>Source</th><th className={th}>Ends</th><th className={th}></th></tr></thead>
-            <tbody>{users.map((user) => <tr key={user.id} className="border-b border-[#eef4f6]"><td colSpan={5} className="p-0">
-              <div className="grid grid-cols-[1.6fr_.8fr_.9fr_1fr_auto] items-center">
+          <table className="w-full min-w-[820px] border-collapse">
+            <thead><tr className="border-b border-[#e2edf0]"><th className={th}>User</th><th className={th}>Plan</th><th className={th}>Accounts</th><th className={th}>Source</th><th className={th}>Ends</th><th className={th}></th></tr></thead>
+            <tbody>{users.map((user) => <tr key={user.id} className="border-b border-[#eef4f6]"><td colSpan={6} className="p-0">
+              <div className="grid grid-cols-[1.6fr_.7fr_1fr_.8fr_1fr_auto] items-center">
                 <div className={td}><div className="font-bold text-[#17364c]">{user.name}{user.role === "admin" ? " (admin)" : ""}</div><div>{user.email}{user.emailVerified ? "" : " · unverified"}{user.trialSuspicious ? " · flagged trial" : ""}</div></div>
                 <div className={`${td} capitalize`}>{user.plan}</div>
+                <div className={td}><div className="font-bold text-[#17364c]">{user.accounts.length}</div><div className="text-[11px]">{Array.from(new Set(user.accounts.map((account) => account.platform))).join(", ") || "none"}</div></div>
                 <div className={td}>{user.planSource === "admin_grant" ? "Granted" : user.planSource}</div>
                 <div className={td}>{user.planSource === "admin_grant" ? (user.grantExpiresAt ? when(user.grantExpiresAt) : "No expiry") : user.planSource === "trial" ? when(user.trialEndsAt) : "—"}</div>
                 <div className={td}><button onClick={() => setOpenUser(openUser === user.id ? "" : user.id)} className="font-bold text-[#287c91]">{openUser === user.id ? "Close" : "Manage"}</button></div>

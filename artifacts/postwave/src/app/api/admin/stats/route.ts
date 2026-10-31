@@ -3,6 +3,7 @@ import {
   billingTransactions,
   exchangeRates,
   postPlatforms,
+  socialAccounts,
   users,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/admin";
@@ -61,6 +62,22 @@ export async function GET() {
         ),
       );
 
+    const [linked] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        users: sql<number>`count(distinct ${socialAccounts.userId})::int`,
+      })
+      .from(socialAccounts)
+      .where(eq(socialAccounts.isActive, true));
+    const linkedByPlatform = await db
+      .select({
+        platform: socialAccounts.platform,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(socialAccounts)
+      .where(eq(socialAccounts.isActive, true))
+      .groupBy(socialAccounts.platform);
+
     const rates = await db
       .select({
         currency: exchangeRates.currency,
@@ -86,6 +103,11 @@ export async function GET() {
         payments: row.payments,
       })),
       failedPostsLast7Days: failed?.count ?? 0,
+      linkedAccounts: {
+        total: linked?.total ?? 0,
+        users: linked?.users ?? 0,
+        byPlatform: linkedByPlatform.sort((a, b) => b.count - a.count),
+      },
       exchangeRates: rates.map((row) => ({
         currency: row.currency,
         rate: Number(row.rate),
