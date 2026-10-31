@@ -53,5 +53,28 @@
   "prefer_related_applications": false,
   "launch_handler": {
     "client_mode": "navigate-existing"
-  }
+  },
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.jpg",
+      "sizes": "720x1410",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Dashboard with your connected accounts and recent posts"
+    },
+    {
+      "src": "/screenshots/analytics.jpg",
+      "sizes": "720x1410",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Analytics for views, likes and comments"
+    },
+    {
+      "src": "/screenshots/calendar.jpg",
+      "sizes": "720x1410",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Publishing calendar"
+    }
+  ]
 }
