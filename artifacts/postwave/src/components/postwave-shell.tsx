@@ -309,7 +309,11 @@ function AccountsPage() {
       const result = await api<{ authUrl: string }>("/api/accounts/connect", json({ platform }));
       if (!result.authUrl) throw new Error("The connection link was not returned.");
       window.location.assign(result.authUrl);
-    } catch (e) { setError(e instanceof Error ? e.message : `Couldn't connect ${platformNames[platform]}.`); setBusy(""); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : `Couldn't connect ${platformNames[platform]}.`);
+      setBusy("");
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
   const disconnect = async (account: Account) => {
     if (!window.confirm(`Disconnect ${account.displayName || account.username || platformNames[account.platform] || account.platform}?`)) return;
