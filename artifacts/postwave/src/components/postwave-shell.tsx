@@ -667,6 +667,34 @@ export function PostwaveShell() {
     input:not([type=checkbox]),textarea{border-color:#dce9ed!important;color:#18384d!important}input:not([type=checkbox]):focus,textarea:focus{border-color:#4eabb3!important;--tw-ring-color:rgba(78,171,179,.16)!important}
     input[type=checkbox]{accent-color:#187c91!important}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline-color:rgba(23,111,152,.42)!important}
     ::selection{color:#125c7d;background:#cfeae8}
+
+/* Postwave glass system — midnight navy, cool cyan and restrained electric blue. */
+:root{color-scheme:dark;--ink:#edf7ff;--muted:#91a8bb;--line:rgba(164,203,226,.15);--paper:#07111f;--surface:rgba(15,31,49,.76);--burgundy:#59d9f2;--burgundy-deep:#35b8df;--burgundy-soft:rgba(76,190,221,.12);--rose:#648dff}
+html,body{background:#07111f!important;color:#edf7ff!important}
+body{background:radial-gradient(ellipse at 12% -10%,rgba(42,126,180,.25),transparent 38rem),radial-gradient(ellipse at 95% 20%,rgba(55,87,190,.18),transparent 34rem),radial-gradient(ellipse at 55% 110%,rgba(27,139,159,.12),transparent 38rem),#07111f!important}
+[class*="bg-[#f5f9fa]"],[class*="bg-[#f2f8fa]"]{background-color:#07111f!important}
+[class*="bg-[#f9fcfc]"],[class*="bg-[#fbfdfd]"],[class*="bg-[#f8fbfc]"],[class*="bg-[#fafcfc]"],[class*="bg-white"]{background-color:rgba(17,35,54,.72)!important}
+[class*="bg-[#eaf5f4]"],[class*="bg-[#e6f3f2]"],[class*="bg-[#f1faf7]"],[class*="bg-[#e7f4f1]"],[class*="bg-[#edf5f6]"],[class*="bg-[#edf5f5]"],[class*="bg-[#e8f4f2]"],[class*="bg-[#e5f3f0]"],[class*="bg-[#e6f4f1]"],[class*="bg-[#e3f5f1]"],[class*="bg-[#e9f1f9]"],[class*="bg-[#eff5e9]"],[class*="bg-[#f4f8f8]"]{background-color:rgba(72,164,194,.13)!important}
+[class*="bg-[#176f98]"]{background:linear-gradient(135deg,#2bbbdc,#477bff)!important;box-shadow:0 8px 26px rgba(48,163,224,.22)!important}
+[class*="bg-[#176f98]"]:hover{filter:brightness(1.12)}
+[class*="border-[#e0eaed]"],[class*="border-[#e2ecef]"],[class*="border-[#e7eef0]"],[class*="border-[#e4ecef]"],[class*="border-[#e5edef]"],[class*="border-[#dce8ed]"],[class*="border-[#dce7eb]"],[class*="border-[#d9e7eb]"],[class*="border-[#edf1f2]"],[class*="border-[#edf2f3]"],[class*="border-[#e3ecee]"],[class*="border-[#e2ebed]"]{border-color:rgba(164,203,226,.15)!important}
+[class*="text-[#17364c]"],[class*="text-[#193a50]"],[class*="text-[#1b3b50]"],[class*="text-[#183348]"],[class*="text-[#234459]"],[class*="text-[#29495c]"],[class*="text-[#315064]"],[class*="text-[#355367]"],[class*="text-[#35596d]"],[class*="text-[#1e4657]"],[class*="text-[#3f5d6e]"],[class*="text-[#3a586a]"],[class*="text-[#38596a]"],[class*="text-[#36576b]"],[class*="text-[#456477]"],[class*="text-[#486779]"],[class*="text-[#476477]"],[class*="text-[#4b687a]"],[class*="text-[#4b687a]"],[class*="text-[#466476]"],[class*="text-[#486779]"],[class*="text-[#547082]"],[class*="text-[#57767f]"],[class*="text-[#597687]"],[class*="text-[#3f5d6e]"],[class*="text-[#3a586a]"]{color:#e7f3fc!important}
+[class*="text-[#718696]"],[class*="text-[#758a97]"],[class*="text-[#778b98]"],[class*="text-[#7a8e9b]"],[class*="text-[#8093a0]"],[class*="text-[#82949f]"],[class*="text-[#8496a0]"],[class*="text-[#8798a1]"],[class*="text-[#8a9aa3]"],[class*="text-[#8b9ba3]"],[class*="text-[#8b9ba5]"],[class*="text-[#899aa3]"],[class*="text-[#8a9aa4]"],[class*="text-[#8699a3]"],[class*="text-[#92a0a7]"],[class*="text-[#a0afb6]"]{color:#91a8bb!important}
+[class*="text-[#19799a]"],[class*="text-[#176f98]"],[class*="text-[#216f79]"],[class*="text-[#227a91]"],[class*="text-[#267b8c]"],[class*="text-[#287c91]"],[class*="text-[#388b91]"],[class*="text-[#378c8a]"],[class*="text-[#348d8a]"],[class*="text-[#398b81]"],[class*="text-[#3c8e87]"],[class*="text-[#3d9288]"],[class*="text-[#3d9b8c]"],[class*="text-[#428982]"],[class*="text-[#438e8b]"],[class*="text-[#448a80]"],[class*="text-[#45988a]"],[class*="text-[#478f8a]"],[class*="text-[#528491]"],[class*="text-[#568994]"],[class*="text-[#578993]"],[class*="text-[#5b8996]"]{color:#69d9ef!important}
+section.rounded-2xl{background:linear-gradient(145deg,rgba(19,39,60,.84),rgba(10,24,40,.76))!important;border:1px solid rgba(151,205,231,.16)!important;box-shadow:0 18px 55px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.045)!important;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px)}
+header.sticky{background:rgba(7,17,31,.78)!important;border-color:rgba(164,203,226,.13)!important;-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px)}
+input:not([type="checkbox"]),textarea,select{background:rgba(5,16,29,.62)!important;border-color:rgba(164,203,226,.18)!important;color:#edf7ff!important}
+input::placeholder,textarea::placeholder{color:#718ba1!important}
+input:not([type="checkbox"]):focus,textarea:focus{border-color:#59d9f2!important;--tw-ring-color:rgba(89,217,242,.15)!important}
+input[type="checkbox"]{accent-color:#59d9f2!important}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid rgba(89,217,242,.52)!important;outline-offset:2px}
+[class*="border-dashed"]{border-color:rgba(117,187,214,.28)!important}
+[class*="divide-[#edf2f3]"]>*+*,[class*="divide-[#edf1f2]"]>*+*{border-color:rgba(164,203,226,.12)!important}
+[class*="shadow-"]{--tw-shadow-color:rgba(0,0,0,.18)}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:rgba(111,177,205,.28)}
+::selection{color:#06121e;background:rgba(89,217,242,.7)}
+@media(prefers-reduced-motion:no-preference){section.rounded-2xl{transition:border-color .22s ease,transform .22s ease,box-shadow .22s ease}section.rounded-2xl:hover{border-color:rgba(89,217,242,.25)!important;box-shadow:0 22px 60px rgba(0,0,0,.26),0 0 28px rgba(55,174,218,.055)!important}}
+
   `}</style><AuthPage path={path} onAuth={refreshUser} /></>;
   if (!protectedRoutes.includes(path)) return <AuthPage path="/login" onAuth={refreshUser} />;
   if (authLoading) return <div className="flex min-h-[100dvh] flex-col bg-[#f5f9fa]"><header className="h-[68px] px-5 py-4"><Brand /></header><main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-10"><Skeleton className="h-9 w-64" /><Skeleton className="mt-3 h-4 w-80" /><div className="mt-8 grid gap-4 sm:grid-cols-3"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div><Skeleton className="mt-6 h-64" /></main><Footer /></div>;
@@ -683,5 +711,33 @@ export function PostwaveShell() {
     header.sticky{background:rgba(248,252,252,.88)!important;border-color:#dce9ed!important}
     input:not([type=checkbox]),textarea{border-color:#dce9ed!important;color:#18384d!important}input:not([type=checkbox]):focus,textarea:focus{border-color:#4eabb3!important;--tw-ring-color:rgba(78,171,179,.16)!important}
     input[type=checkbox]{accent-color:#187c91!important}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline-color:rgba(23,111,152,.42)!important}::selection{color:#125c7d;background:#cfeae8}
+
+/* Postwave glass system — midnight navy, cool cyan and restrained electric blue. */
+:root{color-scheme:dark;--ink:#edf7ff;--muted:#91a8bb;--line:rgba(164,203,226,.15);--paper:#07111f;--surface:rgba(15,31,49,.76);--burgundy:#59d9f2;--burgundy-deep:#35b8df;--burgundy-soft:rgba(76,190,221,.12);--rose:#648dff}
+html,body{background:#07111f!important;color:#edf7ff!important}
+body{background:radial-gradient(ellipse at 12% -10%,rgba(42,126,180,.25),transparent 38rem),radial-gradient(ellipse at 95% 20%,rgba(55,87,190,.18),transparent 34rem),radial-gradient(ellipse at 55% 110%,rgba(27,139,159,.12),transparent 38rem),#07111f!important}
+[class*="bg-[#f5f9fa]"],[class*="bg-[#f2f8fa]"]{background-color:#07111f!important}
+[class*="bg-[#f9fcfc]"],[class*="bg-[#fbfdfd]"],[class*="bg-[#f8fbfc]"],[class*="bg-[#fafcfc]"],[class*="bg-white"]{background-color:rgba(17,35,54,.72)!important}
+[class*="bg-[#eaf5f4]"],[class*="bg-[#e6f3f2]"],[class*="bg-[#f1faf7]"],[class*="bg-[#e7f4f1]"],[class*="bg-[#edf5f6]"],[class*="bg-[#edf5f5]"],[class*="bg-[#e8f4f2]"],[class*="bg-[#e5f3f0]"],[class*="bg-[#e6f4f1]"],[class*="bg-[#e3f5f1]"],[class*="bg-[#e9f1f9]"],[class*="bg-[#eff5e9]"],[class*="bg-[#f4f8f8]"]{background-color:rgba(72,164,194,.13)!important}
+[class*="bg-[#176f98]"]{background:linear-gradient(135deg,#2bbbdc,#477bff)!important;box-shadow:0 8px 26px rgba(48,163,224,.22)!important}
+[class*="bg-[#176f98]"]:hover{filter:brightness(1.12)}
+[class*="border-[#e0eaed]"],[class*="border-[#e2ecef]"],[class*="border-[#e7eef0]"],[class*="border-[#e4ecef]"],[class*="border-[#e5edef]"],[class*="border-[#dce8ed]"],[class*="border-[#dce7eb]"],[class*="border-[#d9e7eb]"],[class*="border-[#edf1f2]"],[class*="border-[#edf2f3]"],[class*="border-[#e3ecee]"],[class*="border-[#e2ebed]"]{border-color:rgba(164,203,226,.15)!important}
+[class*="text-[#17364c]"],[class*="text-[#193a50]"],[class*="text-[#1b3b50]"],[class*="text-[#183348]"],[class*="text-[#234459]"],[class*="text-[#29495c]"],[class*="text-[#315064]"],[class*="text-[#355367]"],[class*="text-[#35596d]"],[class*="text-[#1e4657]"],[class*="text-[#3f5d6e]"],[class*="text-[#3a586a]"],[class*="text-[#38596a]"],[class*="text-[#36576b]"],[class*="text-[#456477]"],[class*="text-[#486779]"],[class*="text-[#476477]"],[class*="text-[#4b687a]"],[class*="text-[#4b687a]"],[class*="text-[#466476]"],[class*="text-[#486779]"],[class*="text-[#547082]"],[class*="text-[#57767f]"],[class*="text-[#597687]"],[class*="text-[#3f5d6e]"],[class*="text-[#3a586a]"]{color:#e7f3fc!important}
+[class*="text-[#718696]"],[class*="text-[#758a97]"],[class*="text-[#778b98]"],[class*="text-[#7a8e9b]"],[class*="text-[#8093a0]"],[class*="text-[#82949f]"],[class*="text-[#8496a0]"],[class*="text-[#8798a1]"],[class*="text-[#8a9aa3]"],[class*="text-[#8b9ba3]"],[class*="text-[#8b9ba5]"],[class*="text-[#899aa3]"],[class*="text-[#8a9aa4]"],[class*="text-[#8699a3]"],[class*="text-[#92a0a7]"],[class*="text-[#a0afb6]"]{color:#91a8bb!important}
+[class*="text-[#19799a]"],[class*="text-[#176f98]"],[class*="text-[#216f79]"],[class*="text-[#227a91]"],[class*="text-[#267b8c]"],[class*="text-[#287c91]"],[class*="text-[#388b91]"],[class*="text-[#378c8a]"],[class*="text-[#348d8a]"],[class*="text-[#398b81]"],[class*="text-[#3c8e87]"],[class*="text-[#3d9288]"],[class*="text-[#3d9b8c]"],[class*="text-[#428982]"],[class*="text-[#438e8b]"],[class*="text-[#448a80]"],[class*="text-[#45988a]"],[class*="text-[#478f8a]"],[class*="text-[#528491]"],[class*="text-[#568994]"],[class*="text-[#578993]"],[class*="text-[#5b8996]"]{color:#69d9ef!important}
+section.rounded-2xl{background:linear-gradient(145deg,rgba(19,39,60,.84),rgba(10,24,40,.76))!important;border:1px solid rgba(151,205,231,.16)!important;box-shadow:0 18px 55px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.045)!important;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px)}
+header.sticky{background:rgba(7,17,31,.78)!important;border-color:rgba(164,203,226,.13)!important;-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px)}
+input:not([type="checkbox"]),textarea,select{background:rgba(5,16,29,.62)!important;border-color:rgba(164,203,226,.18)!important;color:#edf7ff!important}
+input::placeholder,textarea::placeholder{color:#718ba1!important}
+input:not([type="checkbox"]):focus,textarea:focus{border-color:#59d9f2!important;--tw-ring-color:rgba(89,217,242,.15)!important}
+input[type="checkbox"]{accent-color:#59d9f2!important}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid rgba(89,217,242,.52)!important;outline-offset:2px}
+[class*="border-dashed"]{border-color:rgba(117,187,214,.28)!important}
+[class*="divide-[#edf2f3]"]>*+*,[class*="divide-[#edf1f2]"]>*+*{border-color:rgba(164,203,226,.12)!important}
+[class*="shadow-"]{--tw-shadow-color:rgba(0,0,0,.18)}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:rgba(111,177,205,.28)}
+::selection{color:#06121e;background:rgba(89,217,242,.7)}
+@media(prefers-reduced-motion:no-preference){section.rounded-2xl{transition:border-color .22s ease,transform .22s ease,box-shadow .22s ease}section.rounded-2xl:hover{border-color:rgba(89,217,242,.25)!important;box-shadow:0 22px 60px rgba(0,0,0,.26),0 0 28px rgba(55,174,218,.055)!important}}
+
   `}</style><AppFrame user={user} onLogout={() => void logout()}>{view}</AppFrame></>;
 }
