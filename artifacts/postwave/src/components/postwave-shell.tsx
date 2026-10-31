@@ -667,6 +667,7 @@ export function PostwaveShell() {
     input:not([type=checkbox]),textarea{border-color:#dce9ed!important;color:#18384d!important}input:not([type=checkbox]):focus,textarea:focus{border-color:#4eabb3!important;--tw-ring-color:rgba(78,171,179,.16)!important}
     input[type=checkbox]{accent-color:#187c91!important}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline-color:rgba(23,111,152,.42)!important}
     ::selection{color:#125c7d;background:#cfeae8}
+[class*="text-[#145a7c]"]{color:#e7f3fc!important}
 
 /* Postwave glass system — midnight navy, cool cyan and restrained electric blue. */
 :root{color-scheme:dark;--ink:#edf7ff;--muted:#91a8bb;--line:rgba(164,203,226,.15);--paper:#07111f;--surface:rgba(15,31,49,.76);--burgundy:#59d9f2;--burgundy-deep:#35b8df;--burgundy-soft:rgba(76,190,221,.12);--rose:#648dff}
@@ -711,6 +712,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     header.sticky{background:rgba(248,252,252,.88)!important;border-color:#dce9ed!important}
     input:not([type=checkbox]),textarea{border-color:#dce9ed!important;color:#18384d!important}input:not([type=checkbox]):focus,textarea:focus{border-color:#4eabb3!important;--tw-ring-color:rgba(78,171,179,.16)!important}
     input[type=checkbox]{accent-color:#187c91!important}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline-color:rgba(23,111,152,.42)!important}::selection{color:#125c7d;background:#cfeae8}
+[class*="text-[#145a7c]"]{color:#e7f3fc!important}
 
 /* Postwave glass system — midnight navy, cool cyan and restrained electric blue. */
 :root{color-scheme:dark;--ink:#edf7ff;--muted:#91a8bb;--line:rgba(164,203,226,.15);--paper:#07111f;--surface:rgba(15,31,49,.76);--burgundy:#59d9f2;--burgundy-deep:#35b8df;--burgundy-soft:rgba(76,190,221,.12);--rose:#648dff}
