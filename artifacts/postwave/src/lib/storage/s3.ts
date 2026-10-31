@@ -59,6 +59,10 @@ function getS3Client(config: StorageConfig) {
       region: config.region,
       endpoint: config.endpoint,
       forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+      // Newer SDK versions add CRC32 checksums to signed URLs by default,
+      // which Supabase, R2 and other S3-compatible stores reject from browsers.
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
       credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID!,
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,

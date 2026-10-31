@@ -474,8 +474,10 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
       const nextAssets = [...assets];
       for (const file of Array.from(fileList)) {
         const signed = await api<{ uploadUrl: string; key: string; publicUrl: string; headers: Record<string, string> }>("/api/media/upload-url", json({ name: file.name, contentType: file.type, size: file.size }));
-        const response = await fetch(signed.uploadUrl, { method: "PUT", headers: signed.headers, body: file });
-        if (!response.ok) throw new Error(`Upload failed for ${file.name}.`);
+        let response: Response;
+        try { response = await fetch(signed.uploadUrl, { method: "PUT", headers: signed.headers, body: file }); }
+        catch { throw new Error(`Couldn't reach media storage for ${file.name}. The storage bucket may be blocking uploads from this site.`); }
+        if (!response.ok) throw new Error(`Upload failed for ${file.name} (storage returned ${response.status}).`);
         const completed = await api<{ media: MediaAsset }>("/api/media/complete", json({ key: signed.key }));
         nextAssets.push(completed.media);
       }
