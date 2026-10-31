@@ -231,10 +231,10 @@ export async function POST(request: Request) {
       }
     }
 
-    let media: { id: string }[] = [];
+    let media: { id: string; contentType: string }[] = [];
     if (mediaAssetIds.length) {
       media = await db
-        .select({ id: mediaAssets.id })
+        .select({ id: mediaAssets.id, contentType: mediaAssets.contentType })
         .from(mediaAssets)
         .where(
           and(
@@ -245,6 +245,32 @@ export async function POST(request: Request) {
       const mediaIds = new Set(media.map((asset) => asset.id));
       if (mediaAssetIds.some((id) => !mediaIds.has(id))) {
         throw new HttpError(400, "One or more media files are not available.");
+      }
+    }
+
+    if (input.intent !== "draft") {
+      const hasVideo = media.some((asset) => asset.contentType.startsWith("video/"));
+      const platformsSelected = new Set<string>(selectedAccounts.map((account) => String(account.platform)));
+      if (platformsSelected.has("youtube") && !hasVideo) {
+        throw new HttpError(
+          400,
+          "YouTube posts need a video. Attach a video, or remove YouTube from this post.",
+        );
+      }
+      if (platformsSelected.has("tiktok") && media.length === 0) {
+        throw new HttpError(
+          400,
+          "TikTok posts need a video or photos. Attach media, or remove TikTok from this post.",
+        );
+      }
+      const needsMedia = ["instagram", "pinterest"].filter(
+        (platform) => platformsSelected.has(platform),
+      );
+      if (needsMedia.length > 0 && media.length === 0) {
+        throw new HttpError(
+          400,
+          `${needsMedia.map((name) => name[0].toUpperCase() + name.slice(1)).join(" and ")} posts need an image or video. Attach media, or remove ${needsMedia.length > 1 ? "them" : "it"} from this post.`,
+        );
       }
     }
 

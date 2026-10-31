@@ -468,22 +468,32 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
   }, []);
   const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   const uploadFiles = async (fileList: FileList | null) => {
-    if (!fileList?.length) return;
+    // Copy the files first: the file input is cleared right after this is called.
+    const picked = fileList ? Array.from(fileList) : [];
+    if (!picked.length) return;
     setUploading(true); setError(""); setNotice("");
-    try {
-      const nextAssets = [...assets];
-      for (const file of Array.from(fileList)) {
+    const uploaded: MediaAsset[] = [];
+    const uploadedFiles: File[] = [];
+    const failures: string[] = [];
+    for (const file of picked) {
+      try {
         let response: Response;
         try { response = await fetch("/api/media/upload", { method: "POST", credentials: "include", headers: { "Content-Type": file.type }, body: file }); }
         catch { throw new Error(`Couldn't upload ${file.name}. Check your connection and try again.`); }
         const completed = await response.json().catch(() => ({})) as { media?: MediaAsset; message?: string };
         if (!response.ok || !completed.media) throw new Error(completed.message || `Upload failed for ${file.name} (error ${response.status}).`);
-        nextAssets.push(completed.media);
-      }
-      setAssets(nextAssets); setFiles((current) => [...current, ...Array.from(fileList)]); setNotice("Media uploaded and ready to publish.");
-    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't upload your media."); }
-    finally { setUploading(false); }
+        uploaded.push(completed.media); uploadedFiles.push(file);
+      } catch (e) { failures.push(e instanceof Error ? e.message : `Couldn't upload ${file.name}.`); }
+    }
+    if (uploaded.length) {
+      setAssets((current) => [...current, ...uploaded]);
+      setFiles((current) => [...current, ...uploadedFiles]);
+      setNotice(failures.length ? `${uploaded.length} of ${picked.length} files uploaded.` : uploaded.length > 1 ? `${uploaded.length} files uploaded and ready to publish.` : "Media uploaded and ready to publish.");
+    }
+    if (failures.length) setError(failures.join(" "));
+    setUploading(false);
   };
+
   const removeFile = (index: number) => { setFiles((current) => current.filter((_, i) => i !== index)); setAssets((current) => current.filter((_, i) => i !== index)); };
   const submitPost = async (intent: "draft" | "schedule" | "publish_now") => {
     setBusy(true); setError(""); setNotice("");
