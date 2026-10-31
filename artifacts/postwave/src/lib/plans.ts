@@ -16,9 +16,9 @@ export const PLAN_LIMITS: Record<
   PlanName,
   { accounts: number; postsPerMonth: number | null; scheduling: boolean }
 > = {
-  free: { accounts: 2, postsPerMonth: 10, scheduling: false },
-  pro: { accounts: 5, postsPerMonth: null, scheduling: true },
-  business: { accounts: 15, postsPerMonth: null, scheduling: true },
+  free: { accounts: 1, postsPerMonth: 10, scheduling: false },
+  pro: { accounts: 3, postsPerMonth: null, scheduling: true },
+  business: { accounts: 8, postsPerMonth: null, scheduling: true },
 };
 
 export function resolveEffectivePlan(user: PlanUser, now = new Date()) {

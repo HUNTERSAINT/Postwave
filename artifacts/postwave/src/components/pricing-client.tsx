@@ -26,7 +26,7 @@ function money(value: number, currency: string) {
 
 function features(limits: Limits) {
   return [
-    `${limits.accounts} connected accounts`,
+    `${limits.accounts} connected ${limits.accounts === 1 ? "account" : "accounts"}`,
     limits.postsPerMonth === null ? "Unlimited posts" : `${limits.postsPerMonth} posts per month`,
     limits.scheduling ? "Post scheduling and calendar" : "Publish now",
     "Facebook, Instagram, Threads, LinkedIn, X and more",

@@ -19,8 +19,8 @@ type Database = ReturnType<typeof getDatabase>["db"];
 
 export const USD_PLAN_PRICES = {
   free: 0,
-  pro: 10,
-  business: 25,
+  pro: 24,
+  business: 59,
 } as const;
 
 export function isCurrency(value: unknown): value is Currency {

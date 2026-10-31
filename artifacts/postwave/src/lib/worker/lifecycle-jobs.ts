@@ -68,7 +68,7 @@ async function processTrials(now: Date) {
         await sendEmailOnce(db, user, "trial-welcome", {
           subject: "Your Postwave Pro trial has started",
           paragraphs: [
-            "Welcome to Postwave. You have full Pro access during your trial: connect up to 5 accounts, schedule posts and publish everywhere from one place.",
+            "Welcome to Postwave. You have full Pro access during your trial: connect up to 3 accounts, schedule posts and publish everywhere from one place.",
           ],
           action: { label: "Start posting", path: "/compose" },
         });

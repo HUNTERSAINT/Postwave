@@ -159,8 +159,8 @@ export default function BillingPage() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {([
-            { key: "pro" as const, name: "Pro", usd: "$10", features: ["Up to 5 connected accounts", "Unlimited posts", "Post scheduling", "Publishing calendar"] },
-            { key: "business" as const, name: "Business", usd: "$25", features: ["Up to 15 connected accounts", "Unlimited posts", "Post scheduling", "Built for growing teams"] },
+            { key: "pro" as const, name: "Pro", usd: "$24", features: ["Up to 3 connected accounts", "Unlimited posts", "Post scheduling", "Publishing calendar"] },
+            { key: "business" as const, name: "Business", usd: "$59", features: ["Up to 8 connected accounts", "Unlimited posts", "Post scheduling", "Built for growing teams"] },
           ]).map((item) => (
             <article key={item.key} className="rounded-2xl border border-[#dce8eb] bg-white p-6 shadow-sm">
               <p className="text-sm font-bold text-[#388b91]">{item.name}</p>
