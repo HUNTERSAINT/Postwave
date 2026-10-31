@@ -26,6 +26,23 @@ const platformCharacterLimits: Record<string, number> = {
   tiktok: 2200, youtube: 5000, pinterest: 500, reddit: 40000, bluesky: 300,
   googlebusiness: 1500, telegram: 4096, discord: 2000, slack: 40000, whatsapp: 4096,
 };
+const platformRequirements: Record<string, { note: string; met: (hasImage: boolean, hasVideo: boolean) => boolean }> = {
+  instagram: { note: "Needs at least one image or video.", met: (i, v) => i || v },
+  facebook: { note: "Text, images or a video all work.", met: () => true },
+  threads: { note: "Text, images or a video all work. Limit 500 characters.", met: () => true },
+  linkedin: { note: "Text, images or a video all work.", met: () => true },
+  twitter: { note: "Limit 280 characters. Posts with links cost more to publish.", met: () => true },
+  tiktok: { note: "Needs a video or photos.", met: (i, v) => i || v },
+  youtube: { note: "Needs a video. Images alone are not accepted.", met: (_i, v) => v },
+  pinterest: { note: "Needs an image or video.", met: (i, v) => i || v },
+  reddit: { note: "Text or media; the community's own rules apply.", met: () => true },
+  bluesky: { note: "Limit 300 characters.", met: () => true },
+  googlebusiness: { note: "Text with an optional image.", met: () => true },
+  telegram: { note: "Text, images or a video all work.", met: () => true },
+  discord: { note: "Text, images or a video all work.", met: () => true },
+  slack: { note: "Text, images or a video all work.", met: () => true },
+  whatsapp: { note: "Text, images or a video all work.", met: () => true },
+};
 const platformNames: Record<string, string> = {
   instagram: "Instagram", facebook: "Facebook", threads: "Threads", linkedin: "LinkedIn", twitter: "X", tiktok: "TikTok",
   youtube: "YouTube", pinterest: "Pinterest", reddit: "Reddit", bluesky: "Bluesky", googlebusiness: "Google Business",
@@ -555,6 +572,12 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
                   : <video key={asset.id} src={asset.publicUrl} controls preload="metadata" aria-label={`${mediaName} preview`} className="aspect-video w-full rounded-lg border border-white/70 bg-black/5 object-cover shadow-sm" />;
               })}</div>}
               {overLimit && <p className="mt-2 text-[11px] font-semibold text-[#a75245]" role="alert">This post is over the {platformNames[account.platform]} character limit.</p>}
+              {(() => {
+                const rule = platformRequirements[account.platform];
+                if (!rule) return null;
+                const met = rule.met(assets.some((asset) => asset.contentType.startsWith("image/")), assets.some((asset) => asset.contentType.startsWith("video/")));
+                return <p className={`mt-2 text-[11px] font-semibold ${met ? "text-[#6d8390]" : "text-[#a75245]"}`} role={met ? undefined : "alert"}>{met ? "" : "Required: "}{rule.note}</p>;
+              })()}
               {content.length === 0 && <p className="mt-2 text-[10px] text-[#a0afb5]">Write a caption to preview the post.</p>}
             </div>;
           })}</div> : <div className="rounded-xl border border-dashed border-[#d5e3e6] bg-[#f9fbfb] px-4 py-6 text-center text-xs text-[#8798a1]">Select accounts to see a preview and character count.</div>}

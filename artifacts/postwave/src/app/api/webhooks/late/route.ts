@@ -186,52 +186,113 @@ export async function POST(request: Request) {
       return jsonResponse({ received: true });
     }
 
-    const normalizedStatus = statusFor(providerStatus);
-    if (!normalizedStatus || !providerPostId) {
-      return jsonResponse({ received: true });
-    }
+    // Zernio sends per-platform results inside post.platforms[]; older shapes
+    // put a single status at the top level. Handle both.
+    const platformEntries = Array.isArray(postPayload.platforms)
+      ? (postPayload.platforms as unknown[]).map(object)
+      : [];
+    const eventStatus =
+      eventType.toLowerCase().endsWith("published") && !eventType.toLowerCase().includes("platform")
+        ? "published"
+        : eventType.toLowerCase().endsWith("failed") && !eventType.toLowerCase().includes("platform")
+          ? "failed"
+          : undefined;
+
+    if (!providerPostId) return jsonResponse({ received: true });
 
     const [post] = await db
       .select({ id: posts.id, userId: posts.userId })
       .from(posts)
       .where(eq(posts.zernioPostId, providerPostId))
       .limit(1);
-    const owner = post
-      ? { id: post.userId }
-      : userByProfile
-        ? { id: userByProfile.id }
-        : null;
-    if (!post || !owner) return jsonResponse({ received: true });
-
-    const filters = [
-      eq(postPlatforms.postId, post.id),
-      eq(postPlatforms.userId, owner.id),
-    ];
-    if (providerAccountId) {
-      filters.push(eq(postPlatforms.zernioAccountId, providerAccountId));
+    if (!post) {
+      // The webhook can arrive before the worker has saved the provider post id.
+      // Forget this event and ask Zernio to deliver it again.
+      await db
+        .delete(webhookEvents)
+        .where(eq(webhookEvents.eventId, persistedEventId));
+      throw new HttpError(503, "Post not recorded yet. Please retry.");
     }
-    const [target] = await db
-      .select({ id: postPlatforms.id })
-      .from(postPlatforms)
-      .where(and(...filters))
-      .limit(1);
-    if (!target) return jsonResponse({ received: true });
 
-    await db
-      .update(postPlatforms)
-      .set({
-        status: normalizedStatus,
-        errorMessage: normalizedStatus === "failed" ? errorMessage : null,
-        ...(platformPostUrl ? { platformPostUrl } : {}),
-        updatedAt: new Date(),
+    const targets = await db
+      .select({
+        id: postPlatforms.id,
+        platform: postPlatforms.platform,
+        zernioAccountId: postPlatforms.zernioAccountId,
       })
+      .from(postPlatforms)
       .where(
         and(
-          eq(postPlatforms.id, target.id),
-          eq(postPlatforms.userId, owner.id),
+          eq(postPlatforms.postId, post.id),
+          eq(postPlatforms.userId, post.userId),
         ),
       );
-    await updatePostStatus(post.id, owner.id);
+
+    type Update = {
+      status: NonNullable<ReturnType<typeof statusFor>>;
+      error: string | null;
+      url?: string;
+    };
+    const updates = new Map<string, Update>();
+    const unmatchedTargets = [...targets];
+    for (const entry of platformEntries) {
+      const status = statusFor(string(entry.status));
+      if (!status) continue;
+      const entryAccountId = objectId(entry.accountId);
+      const entryPlatform = string(entry.platform);
+      let target = unmatchedTargets.find(
+        (item) => entryAccountId && item.zernioAccountId === entryAccountId,
+      );
+      if (!target && entryPlatform) {
+        const samePlatform = unmatchedTargets.filter(
+          (item) => String(item.platform) === entryPlatform,
+        );
+        if (samePlatform.length === 1) target = samePlatform[0];
+      }
+      if (!target) continue;
+      unmatchedTargets.splice(unmatchedTargets.indexOf(target), 1);
+      updates.set(target.id, {
+        status,
+        error:
+          status === "failed"
+            ? safeProviderMessage(entry.error ?? entry.errorMessage) ??
+              "The platform rejected this post."
+            : null,
+        url: string(entry.publishedUrl) ?? string(entry.platformPostUrl),
+      });
+    }
+
+    if (updates.size === 0) {
+      // No per-platform detail: apply the event-level status to every target.
+      const fallback = statusFor(providerStatus) ?? eventStatus;
+      if (!fallback) return jsonResponse({ received: true });
+      for (const target of targets) {
+        if (providerAccountId && target.zernioAccountId !== providerAccountId) continue;
+        updates.set(target.id, {
+          status: fallback,
+          error: fallback === "failed" ? errorMessage : null,
+          url: platformPostUrl,
+        });
+      }
+    }
+
+    for (const [targetId, update] of updates) {
+      await db
+        .update(postPlatforms)
+        .set({
+          status: update.status,
+          errorMessage: update.error,
+          ...(update.url ? { platformPostUrl: update.url } : {}),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(postPlatforms.id, targetId),
+            eq(postPlatforms.userId, post.userId),
+          ),
+        );
+    }
+    await updatePostStatus(post.id, post.userId);
     return jsonResponse({ received: true });
   } catch (error) {
     return errorResponse(error);
