@@ -14,7 +14,7 @@ import { logger } from "@/lib/logger";
 import { ensureZernioProfile, lateProvider } from "@/lib/social/late-provider";
 import type { PublishJobData } from "@/lib/queue/publish-queue";
 
-function normalizedStatus(status?: string) {
+export function normalizedStatus(status?: string) {
   const value = (status ?? "").toLowerCase();
   if (["published", "success", "completed"].includes(value)) return "published" as const;
   if (["failed", "error", "rejected"].includes(value)) return "failed" as const;
