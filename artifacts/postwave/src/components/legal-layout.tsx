@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export const LEGAL_UPDATED = "October 30, 2026";
+export const LEGAL_UPDATED = "October 31, 2026";
 
 export function supportContact() {
   const email = process.env.SUPPORT_EMAIL;
