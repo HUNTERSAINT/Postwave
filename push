@@ -1,4 +1,0 @@
-#!/bin/bash
-git add .
-git commit -m "${1:-update}" || true
-git push "https://HUNTERSAINT:${GITHUB_TOKEN}@github.com/HUNTERSAINT/Postwave.git" HEAD:main

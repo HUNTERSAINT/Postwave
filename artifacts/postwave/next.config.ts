@@ -1,8 +1,25 @@
 import type { NextConfig } from "next";
 
+// Next.js injects inline bootstrap scripts, so script-src keeps 'unsafe-inline'.
+// Everything else is locked down: no plugins, no framing, same-origin forms/XHR only.
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  allowedDevOrigins: ["*.replit.dev", "*.replit.app", "localhost", "127.0.0.1"],
+  allowedDevOrigins: ["localhost", "127.0.0.1"],
   async headers() {
     return [
       {
@@ -14,7 +31,10 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           ...(process.env.NODE_ENV === "production"
-            ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]
+            ? [
+                { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+                { key: "Content-Security-Policy", value: contentSecurityPolicy },
+              ]
             : []),
         ],
       },
