@@ -42,6 +42,12 @@ function providerError(status: number) {
   if (status === 401 || status === 403) {
     return new HttpError(502, "The social publishing provider rejected the request.");
   }
+  if (status === 402) {
+    return new HttpError(
+      503,
+      "Connecting this platform isn't available right now. Please contact support and we'll enable it.",
+    );
+  }
   if (status === 429 || status >= 500) {
     return new HttpError(503, "The social publishing provider is temporarily unavailable.");
   }
