@@ -18,7 +18,7 @@ export type Post = { id: string; title?: string | null; content: string; status:
 export type User = { id: string; email: string; name?: string; timezone?: string };
 export type ApiError = { message?: string };
 
-export const platforms = ["instagram", "facebook", "threads", "linkedin", "twitter", "tiktok", "youtube", "pinterest", "reddit", "bluesky", "googlebusiness", "telegram", "discord", "slack", "whatsapp"];
+export const platforms = ["instagram", "facebook", "threads", "linkedin", "twitter", "tiktok", "youtube", "pinterest", "reddit", "bluesky", "googlebusiness", "telegram", "discord", "slack"];
 export const platformCharacterLimits: Record<string, number> = {
   instagram: 2200, facebook: 63206, threads: 500, linkedin: 3000, twitter: 280,
   tiktok: 2200, youtube: 5000, pinterest: 500, reddit: 40000, bluesky: 300,

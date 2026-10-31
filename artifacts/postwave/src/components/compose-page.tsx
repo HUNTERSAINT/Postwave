@@ -35,7 +35,7 @@ export function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const activeAccounts = useMemo(() => accounts.filter((account) => account.isActive), [accounts]);
+  const activeAccounts = useMemo(() => accounts.filter((account) => account.isActive && account.platform !== "whatsapp"), [accounts]);
   const selectedAccounts = useMemo(() => activeAccounts.filter((account) => selected.includes(account.id)), [activeAccounts, selected]);
   const refreshAccounts = useCallback(async () => {
     setAccountsLoading(true); setAccountsError("");

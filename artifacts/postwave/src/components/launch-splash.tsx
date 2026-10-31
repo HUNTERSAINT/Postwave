@@ -29,8 +29,8 @@ export function LaunchSplash() {
     }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setPhase("in");
-    const fade = window.setTimeout(() => setPhase("out"), reduced ? 500 : 1900);
-    const done = window.setTimeout(() => setPhase("off"), reduced ? 800 : 2400);
+    const fade = window.setTimeout(() => setPhase("out"), reduced ? 600 : 4300);
+    const done = window.setTimeout(() => setPhase("off"), reduced ? 900 : 4900);
     return () => { window.clearTimeout(fade); window.clearTimeout(done); };
   }, []);
 

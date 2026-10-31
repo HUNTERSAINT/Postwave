@@ -202,13 +202,13 @@ input:not([type="checkbox"]),textarea,select { border-radius:14px !important; ba
   background:linear-gradient(160deg,#effcfa 0%,#d9f4f1 45%,#dff1fb 100%); transition:opacity .5s ease, transform .5s ease; }
 .pw-splash.is-out { opacity:0; transform:scale(1.04); pointer-events:none; }
 .pw-splash-orb { position:absolute; width:90vmin; height:90vmin; border-radius:50%; filter:blur(60px);
-  background:radial-gradient(circle, rgba(45,212,191,.55), rgba(56,189,248,.25) 55%, transparent 70%); animation:pw-orb 2s ease-out both; }
-.pw-splash-logo { position:relative; width:104px; height:104px; filter:drop-shadow(0 18px 30px rgba(8,145,178,.4)); animation:pw-logo-in .7s cubic-bezier(.2,1.1,.3,1) both; }
-.pw-splash-wave { stroke-dasharray:60; stroke-dashoffset:60; animation:pw-draw .8s ease-out forwards; }
-.pw-splash-wave-1 { animation-delay:.45s; }
-.pw-splash-wave-2 { animation-delay:.7s; }
-.pw-splash-word { position:relative; font-size:30px; font-weight:800; letter-spacing:-.05em; color:#0f3b42; opacity:0; animation:pw-rise .6s ease-out 1s forwards; }
-.pw-splash-tag { position:relative; font-size:13px; color:#4f7377; opacity:0; animation:pw-rise .6s ease-out 1.2s forwards; }
+  background:radial-gradient(circle, rgba(45,212,191,.55), rgba(56,189,248,.25) 55%, transparent 70%); animation:pw-orb 3.2s ease-out both; }
+.pw-splash-logo { position:relative; width:104px; height:104px; filter:drop-shadow(0 18px 30px rgba(8,145,178,.4)); animation:pw-logo-in 1.1s cubic-bezier(.2,1.1,.3,1) both; }
+.pw-splash-wave { stroke-dasharray:60; stroke-dashoffset:60; animation:pw-draw 1.3s ease-in-out forwards; }
+.pw-splash-wave-1 { animation-delay:.9s; }
+.pw-splash-wave-2 { animation-delay:1.4s; }
+.pw-splash-word { position:relative; font-size:30px; font-weight:800; letter-spacing:-.05em; color:#0f3b42; opacity:0; animation:pw-rise .9s ease-out 2s forwards; }
+.pw-splash-tag { position:relative; font-size:13px; color:#4f7377; opacity:0; animation:pw-rise .9s ease-out 2.5s forwards; }
 @keyframes pw-logo-in { from { opacity:0; transform:scale(.4) rotate(-12deg); } to { opacity:1; transform:scale(1) rotate(0); } }
 @keyframes pw-draw { to { stroke-dashoffset:0; } }
 @keyframes pw-rise { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }

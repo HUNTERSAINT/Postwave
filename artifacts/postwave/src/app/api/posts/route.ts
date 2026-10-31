@@ -213,6 +213,12 @@ export async function POST(request: Request) {
     const selectedAccounts = accountIds
       .map((id) => accountMap.get(id))
       .filter((account) => account !== undefined);
+    if (selectedAccounts.some((account) => account.platform === "whatsapp")) {
+      throw new HttpError(
+        400,
+        "WhatsApp sends template messages to specific contacts, not feed posts, so it can't be used as a posting destination yet. Remove it and try again.",
+      );
+    }
     if (selectedAccounts.length !== accountIds.length) {
       throw new HttpError(
         400,

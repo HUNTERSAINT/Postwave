@@ -25,7 +25,6 @@ const supportedPlatforms = [
   "telegram",
   "discord",
   "slack",
-  "whatsapp",
 ] as const;
 
 const schema = z.object({ platform: z.enum(supportedPlatforms) });
