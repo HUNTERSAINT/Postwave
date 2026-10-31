@@ -7,12 +7,13 @@ import {
   ChevronDown, CircleAlert, Clock3, ExternalLink, FileImage, Globe2, ImagePlus,
   Instagram, Link2, LoaderCircle, LogOut, Menu, MessageCircle, Music2, Plus, RefreshCw,
   Send, Settings2, ShieldCheck, Sparkles, Trash2, UploadCloud, X, CalendarDays, CreditCard, ChevronLeft,
-  ChevronRight, FileText, Save, Clock,
+  ChevronRight, FileText, Save, Clock, BarChart3,
   Video,
 } from "lucide-react";
 
 import { PlanBanner } from "@/components/plan-banner";
 import { AiCaptionAssistant } from "@/components/ai-caption-assistant";
+import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 
 type Account = { id: string; platform: string; username?: string; displayName?: string; isActive: boolean };
 type MediaAsset = { id: string; key?: string; publicUrl: string; contentType: string; size: number };
@@ -65,7 +66,7 @@ function json(body: unknown): RequestInit { return { method: "POST", body: JSON.
 function Brand({ compact = false }: { compact?: boolean }) {
   return <a href="/dashboard" className="inline-flex items-center gap-2.5" aria-label="Postwave home">
     <svg className="wave-mark h-9 w-9" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <rect width="40" height="40" rx="12" fill="#176f98" />
+      <defs><linearGradient id="pw-brand" x1="0" y1="0" x2="40" y2="40"><stop stopColor="#2dd4bf" /><stop offset="1" stopColor="#0284c7" /></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#pw-brand)" />
       <path d="M6 17C10.3 17 10.3 23 14.6 23C18.9 23 18.9 17 23.2 17C27.5 17 27.5 23 34 23" stroke="#f5ffff" strokeWidth="3" strokeLinecap="round" />
       <path d="M7 26C11 26 11 30 15 30C19 30 19 26 23 26C27 26 27 30 33 30" stroke="#9ce1d8" strokeWidth="2.4" strokeLinecap="round" />
     </svg>
@@ -219,9 +220,9 @@ function AuthPage({ path, onAuth }: { path: string; onAuth: () => void }) {
 
 function AppFrame({ user, onLogout, children }: { user: User; onLogout: () => void; children: ReactNode }) {
   const [mobileMenu, setMobileMenu] = useState(false);
-  const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/calendar", label: "Calendar", icon: CalendarDays }, { href: "/drafts", label: "Drafts", icon: FileText }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }, { href: "/billing", label: "Billing", icon: CreditCard }];
+  const items = [{ href: "/dashboard", label: "Overview", icon: Globe2 }, { href: "/compose", label: "Compose", icon: Plus }, { href: "/calendar", label: "Calendar", icon: CalendarDays }, { href: "/drafts", label: "Drafts", icon: FileText }, { href: "/accounts", label: "Accounts", icon: Link2 }, { href: "/history", label: "History", icon: Clock3 }, { href: "/analytics", label: "Analytics", icon: BarChart3 }, { href: "/billing", label: "Billing", icon: CreditCard }];
   const pathname = usePathname() ?? "/dashboard";
-  return <div className="min-h-[100dvh] bg-[#f5f9fa]">
+  return <div className="min-h-[100dvh]">
     <header className="sticky top-0 z-20 border-b border-[#e0eaed] bg-[#f9fcfc]/95 backdrop-blur">
       <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-7 lg:px-10">
         <div className="flex items-center gap-9"><Brand /><nav className="hidden items-center gap-1 md:flex">{items.map(({ href, label, icon: Icon }) => <a key={href} href={href} className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-semibold transition ${pathname === href ? "bg-[#e6f3f2] text-[#216f79]" : "text-[#718695] hover:bg-[#edf5f6] hover:text-[#35576b]"}`}><Icon className="h-4 w-4" />{label}</a>)}</nav></div>
@@ -647,7 +648,7 @@ export function PostwaveShell() {
   const pathname = usePathname() ?? "/";
   const path = pathname.replace(/\/$/, "") || "/";
   const authRoutes = ["/login", "/signup", "/verify-email", "/forgot-password", "/reset-password"];
-  const protectedRoutes = ["/dashboard", "/accounts", "/compose", "/history", "/calendar", "/drafts", "/"];
+  const protectedRoutes = ["/dashboard", "/accounts", "/compose", "/history", "/calendar", "/drafts", "/analytics", "/"];
 
   useEffect(() => {
     let live = true;
@@ -704,7 +705,9 @@ export function PostwaveShell() {
     return <AuthPage path="/login" onAuth={refreshUser} />;
   }
 
-  const view = path === "/accounts"
+  const view = path === "/analytics"
+    ? <AnalyticsDashboard />
+    : path === "/accounts"
     ? <AccountsPage />
     : path === "/compose"
       ? <ComposePage savedTimezone={user.timezone} />

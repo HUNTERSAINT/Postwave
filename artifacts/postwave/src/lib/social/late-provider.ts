@@ -378,3 +378,33 @@ export class LateProvider implements SocialProvider {
 }
 
 export const lateProvider = new LateProvider();
+
+/** Raw post analytics for one profile (paged). Returns the provider's post items. */
+export async function fetchZernioAnalytics(input: {
+  profileId: string;
+  fromDate: string;
+  toDate: string;
+  maxPosts?: number;
+}) {
+  const pageSize = 50;
+  const maxPosts = input.maxPosts ?? 200;
+  const items: JsonObject[] = [];
+  for (let page = 1; items.length < maxPosts && page <= 6; page += 1) {
+    const query = new URLSearchParams({
+      profileId: input.profileId,
+      source: "late",
+      fromDate: input.fromDate,
+      toDate: input.toDate,
+      limit: String(pageSize),
+      page: String(page),
+    });
+    const raw = await client.request<unknown>("GET", `/analytics?${query.toString()}`);
+    const root = unwrap(raw);
+    const posts = Array.isArray(root.posts) ? root.posts : [];
+    for (const post of posts) items.push(asObject(post));
+    const pagination = asObject(root.pagination);
+    const pages = Number(pagination.pages ?? pagination.totalPages ?? 0);
+    if (posts.length < pageSize || (pages && page >= pages)) break;
+  }
+  return items;
+}
