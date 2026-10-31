@@ -645,14 +645,73 @@ export function PostwaveShell() {
   const path = pathname.replace(/\/$/, "") || "/";
   const authRoutes = ["/login", "/signup", "/verify-email", "/forgot-password", "/reset-password"];
   const protectedRoutes = ["/dashboard", "/accounts", "/compose", "/history", "/calendar", "/drafts", "/"];
+
   useEffect(() => {
     let live = true;
-    api<{ user: User | null }>("/api/auth/me").then((result) => { if (live) setUser(result.user); }).catch(() => { if (live) setUser(null); }).finally(() => { if (live) setAuthLoading(false); });
+    api<{ user: User | null }>("/api/auth/me")
+      .then((result) => { if (live) setUser(result.user); })
+      .catch(() => { if (live) setUser(null); })
+      .finally(() => { if (live) setAuthLoading(false); });
     return () => { live = false; };
   }, []);
+
   const logout = async () => {
-    try { await api("/api/auth/logout", { method: "POST" }); } finally { setUser(null); window.location.href = "/login"; }
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+    } finally {
+      setUser(null);
+      window.location.href = "/login";
+    }
   };
-  const refreshUser = () => { api<{ user: User | null }>("/api/auth/me").then((result) => setUser(result.user)).catch(() => setUser(null)); };
-  if (authRoutes.includes(path)) return <><AppFrame user={user} onLogout={() => void logout()}>{view}</AppFrame></>;
+
+  const refreshUser = () => {
+    void api<{ user: User | null }>("/api/auth/me")
+      .then((result) => setUser(result.user))
+      .catch(() => setUser(null));
+  };
+
+  if (authRoutes.includes(path)) {
+    return <AuthPage path={path} onAuth={refreshUser} />;
+  }
+
+  if (!protectedRoutes.includes(path)) {
+    return <AuthPage path="/login" onAuth={refreshUser} />;
+  }
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col bg-[#f5f9fa]">
+        <header className="h-[68px] px-5 py-4"><Brand /></header>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-5 pt-10">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="mt-3 h-4 w-80" />
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
+          <Skeleton className="mt-6 h-64" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage path="/login" onAuth={refreshUser} />;
+  }
+
+  const view = path === "/accounts"
+    ? <AccountsPage />
+    : path === "/compose"
+      ? <ComposePage savedTimezone={user.timezone} />
+      : path === "/history"
+        ? <HistoryPage />
+        : path === "/calendar"
+          ? <CalendarPage savedTimezone={user.timezone} />
+          : path === "/drafts"
+            ? <DraftsPage />
+            : <Dashboard />;
+
+  return <AppFrame user={user} onLogout={() => void logout()}>{view}</AppFrame>;
 }
