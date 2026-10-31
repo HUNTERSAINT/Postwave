@@ -179,3 +179,5 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 ::selection{color:#06121e;background:rgba(89,217,242,.7)}
 @media(prefers-reduced-motion:no-preference){section.rounded-2xl{transition:border-color .22s ease,transform .22s ease,box-shadow .22s ease}section.rounded-2xl:hover{border-color:rgba(89,217,242,.25)!important;box-shadow:0 22px 60px rgba(0,0,0,.26),0 0 28px rgba(55,174,218,.055)!important}}
 
+
+[class*="text-[#145a7c]"]{color:#e7f3fc!important}
