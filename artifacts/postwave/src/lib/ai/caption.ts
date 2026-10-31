@@ -114,19 +114,17 @@ async function geminiCandidates(apiKey: string): Promise<string[]> {
     .map((model) => (model.name ?? "").replace(/^models\//, ""))
     .filter(
       (name) =>
-        /^gemini-[\d.]+-flash(-lite)?(-latest)?$/.test(name) ||
-        name === "gemini-flash-latest" ||
-        name === "gemini-flash-lite-latest",
+        /^gemini-[\d.]+-flash(-lite)?$/.test(name),
     );
   // Prefer stable flash models; newest version first, lite after regular.
   names.sort((a, b) => {
-    const rank = (name: string) => (name.includes("lite") ? 1 : 0);
+    const rank = (name: string) => (name.includes("lite") ? 0 : 1);
     if (rank(a) !== rank(b)) return rank(a) - rank(b);
     return b.localeCompare(a, undefined, { numeric: true });
   });
   logger.info({ geminiModels: names.slice(0, 6) }, "Gemini models available");
   if (!names.length) throw new HttpError(503, "The AI assistant is unavailable right now. Please try again.");
-  geminiModelCache = { models: names.slice(0, 4), at: Date.now() };
+  geminiModelCache = { models: names.slice(0, 3), at: Date.now() };
   return geminiModelCache.models;
 }
 
@@ -148,15 +146,23 @@ async function callGemini(apiKey: string, system: string, user: string): Promise
             responseMimeType: "application/json",
           },
         }),
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(15_000),
       },
-    );
+    ).catch((error: unknown) => {
+      logger.warn(
+        { aiModel: model, errorName: error instanceof Error ? error.name : "UnknownError" },
+        "Gemini model request threw",
+      );
+      return undefined;
+    });
+    if (!response) continue;
     if (response.ok) return response;
     logger.warn({ aiStatus: response.status, aiModel: model }, "Gemini model request failed");
     last = response;
-    if (response.status !== 404 && response.status !== 429 && response.status !== 400) break;
+    if (response.status === 401 || response.status === 403) break;
   }
-  return last as Response;
+  if (!last) throw new HttpError(503, "The AI assistant is busy right now. Please try again.");
+  return last;
 }
 
 async function callModel(system: string, user: string): Promise<string> {
