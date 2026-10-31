@@ -91,41 +91,80 @@ function cleanCaption(value: string) {
     .trim();
 }
 
-export async function generateCaption(input: CaptionRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+async function callModel(system: string, user: string): Promise<string> {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!geminiKey && !anthropicKey) {
     throw new HttpError(503, "The AI assistant is not set up yet. Please contact support.");
   }
-  const { system, user } = buildPrompt(input);
 
   let response: Response;
   try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
-        max_tokens: 700,
-        temperature: 0.9,
-        system,
-        messages: [{ role: "user", content: user }],
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
+    if (geminiKey) {
+      const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-goog-api-key": geminiKey },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: system }] },
+            contents: [{ role: "user", parts: [{ text: user }] }],
+            generationConfig: {
+              temperature: 0.9,
+              maxOutputTokens: 1000,
+              responseMimeType: "application/json",
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+          signal: AbortSignal.timeout(30_000),
+        },
+      );
+    } else {
+      response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": anthropicKey as string,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
+          max_tokens: 700,
+          temperature: 0.9,
+          system,
+          messages: [{ role: "user", content: user }],
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+    }
   } catch {
     throw new HttpError(503, "The AI assistant is busy right now. Please try again.");
   }
   if (!response.ok) {
-    logger.warn({ aiStatus: response.status }, "AI caption request was rejected");
+    logger.warn(
+      { aiStatus: response.status, aiProvider: geminiKey ? "gemini" : "anthropic" },
+      "AI caption request was rejected",
+    );
+    if (response.status === 429) {
+      throw new HttpError(429, "The AI assistant is busy right now. Please try again in a minute.");
+    }
     throw new HttpError(503, "The AI assistant is unavailable right now. Please try again.");
   }
 
+  if (geminiKey) {
+    const data = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    return (data.candidates?.[0]?.content?.parts ?? []).map((part) => part.text ?? "").join("");
+  }
   const data = (await response.json()) as { content?: { type: string; text?: string }[] };
-  const text = (data.content ?? []).map((part) => part.text ?? "").join("");
+  return (data.content ?? []).map((part) => part.text ?? "").join("");
+}
+
+export async function generateCaption(input: CaptionRequest) {
+  const { system, user } = buildPrompt(input);
+  const text = await callModel(system, user);
   const parsed = extractJson(text);
 
   if (input.mode === "hashtags") {
