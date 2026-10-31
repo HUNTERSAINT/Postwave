@@ -473,12 +473,11 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
     try {
       const nextAssets = [...assets];
       for (const file of Array.from(fileList)) {
-        const signed = await api<{ uploadUrl: string; key: string; publicUrl: string; headers: Record<string, string> }>("/api/media/upload-url", json({ name: file.name, contentType: file.type, size: file.size }));
         let response: Response;
-        try { response = await fetch(signed.uploadUrl, { method: "PUT", headers: signed.headers, body: file }); }
-        catch { throw new Error(`Couldn't reach media storage for ${file.name}. The storage bucket may be blocking uploads from this site.`); }
-        if (!response.ok) throw new Error(`Upload failed for ${file.name} (storage returned ${response.status}).`);
-        const completed = await api<{ media: MediaAsset }>("/api/media/complete", json({ key: signed.key }));
+        try { response = await fetch("/api/media/upload", { method: "POST", credentials: "include", headers: { "Content-Type": file.type }, body: file }); }
+        catch { throw new Error(`Couldn't upload ${file.name}. Check your connection and try again.`); }
+        const completed = await response.json().catch(() => ({})) as { media?: MediaAsset; message?: string };
+        if (!response.ok || !completed.media) throw new Error(completed.message || `Upload failed for ${file.name} (error ${response.status}).`);
         nextAssets.push(completed.media);
       }
       setAssets(nextAssets); setFiles((current) => [...current, ...Array.from(fileList)]); setNotice("Media uploaded and ready to publish.");

@@ -201,3 +201,28 @@ export async function deleteUploadedObject(userId: string, key: string) {
     new DeleteObjectCommand({ Bucket: config.bucket, Key: key }),
   );
 }
+
+/** Uploads through the server, so browsers never talk to the storage bucket directly. */
+export async function putObjectFromServer(
+  userId: string,
+  contentType: string,
+  bytes: Uint8Array,
+) {
+  validateUploadMetadata(contentType, bytes.byteLength);
+  const config = storageConfig();
+  const client = getS3Client(config);
+  const extension = ALLOWED_MEDIA.get(contentType);
+  if (!extension) throw new HttpError(400, "This file type is not supported.");
+  const key = `${userId}/media/${randomUUID()}${extension}`;
+  await client.send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: bytes,
+      ContentType: contentType,
+      ContentLength: bytes.byteLength,
+      Metadata: { postwaveuserid: userId },
+    }),
+  );
+  return key;
+}
