@@ -63,3 +63,8 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Android signing secrets: never commit
+*.keystore
+*.jks
+signing-key-info.txt
