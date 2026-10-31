@@ -76,3 +76,71 @@ footer { border-color:rgba(37,153,151,.18) !important; color:#55777c !important;
   section.rounded-2xl:hover { border-color:rgba(13,155,152,.38) !important; box-shadow:0 22px 58px rgba(26,105,105,.13),0 0 28px rgba(33,190,177,.08),inset 0 1px 0 rgba(255,255,255,.95) !important; transform:translateY(-2px); }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }
+
+
+/* Floating glass interaction system — shared across every Postwave screen */
+:root {
+  --float-shadow: 0 12px 30px rgba(18, 105, 104, .10), 0 3px 9px rgba(18, 105, 104, .06), inset 0 1px 0 rgba(255,255,255,.88);
+  --float-shadow-hover: 0 20px 42px rgba(18, 105, 104, .16), 0 7px 16px rgba(18, 105, 104, .08), inset 0 1px 0 rgba(255,255,255,.95);
+}
+button:not(:disabled), [role="button"]:not([aria-disabled="true"]) {
+  position: relative;
+  transform: translateY(0);
+  transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease, filter .2s ease, background .2s ease;
+  box-shadow: 0 7px 18px rgba(18,105,104,.10), inset 0 1px 0 rgba(255,255,255,.38);
+  will-change: transform;
+}
+button:not(:disabled):hover, [role="button"]:not([aria-disabled="true"]):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(18,105,104,.17), 0 4px 10px rgba(18,105,104,.08), inset 0 1px 0 rgba(255,255,255,.48);
+  filter: saturate(1.06);
+}
+button:not(:disabled):active, [role="button"]:not([aria-disabled="true"]):active {
+  transform: translateY(1px) scale(.985);
+  box-shadow: 0 3px 8px rgba(18,105,104,.12), inset 0 2px 5px rgba(18,105,104,.08);
+}
+button:disabled { box-shadow:none; cursor:not-allowed; }
+section.rounded-2xl, [data-floating-card="true"] {
+  position: relative;
+  box-shadow: var(--float-shadow) !important;
+  transform: translateY(0);
+  transition: transform .24s cubic-bezier(.2,.8,.2,1), box-shadow .24s ease, border-color .24s ease;
+}
+section.rounded-2xl:hover, [data-floating-card="true"]:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--float-shadow-hover) !important;
+}
+header.sticky, nav, [data-glass="true"] {
+  box-shadow: 0 10px 30px rgba(18,105,104,.08), inset 0 1px 0 rgba(255,255,255,.85);
+}
+input:not([type="checkbox"]), textarea, select {
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+input:not([type="checkbox"]):hover, textarea:hover, select:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 18px rgba(18,105,104,.07), inset 0 1px 2px rgba(25,99,100,.035);
+}
+input:not([type="checkbox"]):focus, textarea:focus, select:focus {
+  transform: translateY(-1px);
+}
+a[href].inline-flex, nav a, a[role="button"] {
+  transition: transform .2s ease, color .2s ease, box-shadow .2s ease;
+}
+nav a:hover, a[role="button"]:hover {
+  transform: translateY(-2px);
+}
+@media (hover: none) {
+  button:not(:disabled):active, [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(.975);
+  }
+  section.rounded-2xl:active, [data-floating-card="true"]:active {
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button, [role="button"], section.rounded-2xl, [data-floating-card="true"],
+  input, textarea, select, nav a, a[role="button"] {
+    transition: none !important;
+    transform: none !important;
+  }
+}
