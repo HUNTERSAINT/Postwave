@@ -188,7 +188,16 @@ async function callModel(system: string, user: string): Promise<string> {
         signal: AbortSignal.timeout(30_000),
       });
     }
-  } catch {
+  } catch (error) {
+    logger.warn(
+      {
+        aiProvider: geminiKey ? "gemini" : "anthropic",
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorMessage: error instanceof Error ? error.message.slice(0, 200) : "",
+        errorCause: error instanceof Error && error.cause instanceof Error ? error.cause.message.slice(0, 200) : "",
+      },
+      "AI caption request threw",
+    );
     throw new HttpError(503, "The AI assistant is busy right now. Please try again.");
   }
   if (!response.ok) {
