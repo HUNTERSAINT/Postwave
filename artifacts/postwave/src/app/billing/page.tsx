@@ -38,6 +38,7 @@ export default function BillingPage() {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [agreed, setAgreed] = useState(false);
 
   async function load() {
     setError("");
@@ -83,7 +84,7 @@ export default function BillingPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: targetPlan, currency }),
+        body: JSON.stringify({ plan: targetPlan, currency, acceptRenewal: agreed }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.message || "Could not start checkout.");
@@ -167,11 +168,15 @@ export default function BillingPage() {
               <p className="mt-3 text-3xl font-extrabold">{prices ? money(prices.prices[item.key], currency) : "—"}<span className="text-sm font-medium text-[#8397a2]"> / 30 days</span></p>
               <p className="mt-1 text-xs text-[#8397a2]">{item.usd} USD base price · exchange-rate buffer included</p>
               <ul className="mt-5 grid gap-2 text-sm text-[#557184]">{item.features.map((feature) => <li key={feature}>✓ {feature}</li>)}</ul>
-              <button disabled={busy !== "" || isPaid} onClick={() => void checkout(item.key)} className="mt-6 w-full rounded-xl bg-[#176f98] px-4 py-3 text-sm font-bold text-white hover:bg-[#125c7d] disabled:cursor-not-allowed disabled:opacity-50">{busy === item.key ? "Opening secure checkout…" : isPaid ? "Current subscription active" : `Choose ${item.name}`}</button>
+              <button disabled={busy !== "" || isPaid || !agreed} onClick={() => void checkout(item.key)} className="mt-6 w-full rounded-xl bg-[#176f98] px-4 py-3 text-sm font-bold text-white hover:bg-[#125c7d] disabled:cursor-not-allowed disabled:opacity-50">{busy === item.key ? "Opening secure checkout…" : isPaid ? "Current subscription active" : `Choose ${item.name}`}</button>
             </article>
           ))}
         </div>
-        <p className="mt-6 text-xs leading-5 text-[#8397a2]">Payments are processed securely by Paystack. Card checkout is used for automatic monthly renewal. If your card does not support reusable authorization, your plan will remain active for the paid period and then return to Free. You can cancel renewal at any time.</p>
+        <label className="mt-6 flex items-start gap-3 text-sm leading-5 text-[#3f5d6e]">
+          <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>I understand my plan renews automatically every 30 days at the exchange rate on the renewal day, I can cancel renewal on this page at any time, and I agree to the <a className="font-semibold underline" href="/terms" target="_blank" rel="noreferrer">Terms</a> and <a className="font-semibold underline" href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>. Prices may be subject to applicable taxes such as VAT.</span>
+        </label>
+        <p className="mt-4 text-xs leading-5 text-[#8397a2]">Payments are processed securely by Paystack. Card checkout is used for automatic monthly renewal. If your card does not support reusable authorization, your plan will remain active for the paid period and then return to Free. You can cancel renewal at any time.</p>
         <p className="mt-8 text-center text-xs text-[#8397a2]">Postwave by Mazi Saint Concepts</p>
       </div>
     </main>

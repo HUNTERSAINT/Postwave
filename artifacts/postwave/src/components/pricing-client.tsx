@@ -110,7 +110,7 @@ export function PricingClient() {
         {pricing && (
           <p className="mt-6 text-center text-xs leading-5 text-[#8397a2]">
             Prices converted at today&apos;s rate. Rate as of {new Date(pricing.rateFetchedAt).toLocaleDateString()}.
-            Plans are priced in USD; the amount you pay is shown in your currency at checkout and locked for 15 minutes.
+            Plans are priced in USD; the amount you pay is shown in your currency at checkout and locked for 15 minutes. Prices may be subject to applicable taxes such as VAT. Paid plans renew automatically every 30 days until you cancel.
           </p>
         )}
         <p className="mt-10 text-center text-xs text-[#8397a2]">

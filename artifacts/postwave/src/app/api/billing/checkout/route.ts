@@ -7,6 +7,7 @@ import { getCurrencyRate, isCurrency, supportedCurrencies, toMinorUnits, USD_PLA
 import { convertUsdPrice } from "@/lib/currency";
 import { getDatabase } from "@/lib/db";
 import { errorResponse, HttpError, jsonResponse, parseJson } from "@/lib/http";
+import { logger } from "@/lib/logger";
 import { initializePaystackTransaction } from "@/lib/billing/paystack";
 
 export const runtime = "nodejs";
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
 const checkoutSchema = z.object({
   plan: z.enum(["pro", "business"]),
   currency: z.enum(supportedCurrencies).optional(),
+  acceptRenewal: z.literal(true, { message: "Please confirm you agree to automatic renewal before paying." }),
 });
 
 const PAYSTACK_CURRENCIES = ["NGN", "USD", "GHS", "ZAR", "KES"] as const;
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
   try {
     const user = await requireUser();
     const body = await parseJson(request, checkoutSchema);
+    logger.info({ userId: user.id, plan: body.plan, consentAt: new Date().toISOString() }, "Renewal consent accepted at checkout");
     const { db } = getDatabase();
     const [account] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
     if (!account) throw new HttpError(404, "Account not found.");

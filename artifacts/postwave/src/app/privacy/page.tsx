@@ -19,6 +19,8 @@ export default function PrivacyPage() {
         <li><strong>Your content:</strong> post text, images and videos you upload, schedules, drafts, and the publishing status and any error for each platform.</li>
         <li><strong>Billing data:</strong> your plan, payment references, amounts, currency, exchange rate used and a reusable payment authorization reference from Paystack. Card numbers are entered on Paystack&rsquo;s pages and never reach our servers.</li>
         <li><strong>Security and abuse-prevention data:</strong> one-way hashes of your email, IP address and device details, used only to stop repeated free-trial abuse. We also keep short-term request counters for rate limiting.</li>
+        <li><strong>Performance data:</strong> views, likes, comments, shares and similar numbers for posts you published through Postwave, which we receive from the social platforms through Zernio to show your analytics.</li>
+        <li><strong>AI assistant text:</strong> if you use &ldquo;Write with AI&rdquo;, the idea, caption or hashtags you type there. We do not keep it after the response is returned.</li>
         <li><strong>Operational data:</strong> sign-in sessions and the emails we send you (verification, trial and billing notices).</li>
       </ul>
 
@@ -29,13 +31,17 @@ export default function PrivacyPage() {
         <li>To protect the service from abuse, fraud and unauthorized access.</li>
         <li>To respond to support requests and meet legal obligations.</li>
       </ul>
-      <p>We do not sell your personal data and we do not use your posts to train AI models.</p>
+      <p>We do not sell your personal data and we do not use your content to train our own AI models. Text you enter into the AI assistant is processed by our AI provider (see below), whose own terms govern how it handles that text, so do not enter anything confidential there.</p>
+
+      <h2>Legal basis</h2>
+      <p>We process your data to perform our contract with you (running your account, publishing and billing), because you consent (for example when you connect an account or use the AI assistant), to meet legal obligations, and for our legitimate interests in keeping Postwave secure and preventing trial and payment abuse.</p>
 
       <h2>Who we share it with</h2>
       <p>We use trusted providers to deliver the service. They process data only for that purpose:</p>
       <ul>
         <li><strong>Zernio (Late):</strong> connects to your social accounts and publishes your posts.</li>
         <li><strong>The social platforms you choose</strong> (such as Facebook, Instagram, Threads, LinkedIn and X): they receive the posts you publish and are governed by their own policies.</li>
+        <li><strong>Google (Gemini API):</strong> generates caption and hashtag suggestions from the text you enter in the AI assistant.</li>
         <li><strong>Paystack:</strong> processes card payments.</li>
         <li><strong>Resend:</strong> sends our emails.</li>
         <li><strong>Railway and an S3-compatible storage provider:</strong> host our application, database and uploaded media.</li>
@@ -43,11 +49,14 @@ export default function PrivacyPage() {
       </ul>
       <p>We may also disclose data when the law requires it or to protect our rights and users.</p>
 
+      <h2>Transfers outside Nigeria</h2>
+      <p>Our providers run servers in other countries, including the Netherlands and Ireland (hosting and storage), and the United States (publishing and AI providers). When we transfer personal data abroad we rely on providers that apply appropriate safeguards, such as contractual data-protection terms and encryption in transit, as the Nigeria Data Protection Act 2023 requires.</p>
+
       <h2>How long we keep it</h2>
       <p>We keep your data while your account is active. When you ask us to delete your account we remove your personal data within 30 days, except records we must keep for tax, accounting or legal reasons, such as payment records. Posts already published on social platforms stay there until you remove them on those platforms.</p>
 
       <h2>Security</h2>
-      <p>We use encrypted connections, hashed passwords, single-use verification links, per-user data separation and access controls. No system is perfectly secure, so please use a strong, unique password.</p>
+      <p>We use encrypted connections, hashed passwords, single-use verification links, per-user data separation and access controls. No system is perfectly secure, so please use a strong, unique password. If a breach puts your personal data at risk, we will notify the Nigeria Data Protection Commission and affected users within the time the law requires.</p>
 
       <h2>Your rights</h2>
       <p>You can ask us to access, correct, export or delete your personal data, to restrict or object to certain processing, and to withdraw consent where we rely on it. You can also complain to the Nigeria Data Protection Commission. To delete your data, see our <a className="font-semibold text-[#287c91] underline" href="/data-deletion">data deletion page</a>.</p>
