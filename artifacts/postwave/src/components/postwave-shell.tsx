@@ -297,6 +297,7 @@ function AccountsPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
+  const [connectLink, setConnectLink] = useState<{ platform: string; url: string } | null>(null);
   const refresh = useCallback(async () => {
     setLoading(true); setError("");
     try { const result = await api<{ accounts: Account[] }>("/api/accounts"); setAccounts(result.accounts || []); }
@@ -308,7 +309,9 @@ function AccountsPage() {
     try {
       const result = await api<{ authUrl: string }>("/api/accounts/connect", json({ platform }));
       if (!result.authUrl) throw new Error("The connection link was not returned.");
+      setConnectLink({ platform, url: result.authUrl });
       window.location.assign(result.authUrl);
+      window.setTimeout(() => setBusy(""), 8000);
     } catch (e) {
       setError(e instanceof Error ? e.message : `Couldn't connect ${platformNames[platform]}.`);
       setBusy("");
@@ -323,7 +326,7 @@ function AccountsPage() {
   };
   return <>
     <PageTitle eyebrow="Your channels" title="Connected accounts" description="Connect your own social identities. Every account stays yours, and only you can publish to it." />
-    {error && <div className="mb-4"><Notice>{error}</Notice></div>}{notice && <div className="mb-4"><Notice tone="success">{notice}</Notice></div>}
+    {error && <div className="mb-4"><Notice>{error}</Notice></div>}{notice && <div className="mb-4"><Notice tone="success">{notice}</Notice></div>}{connectLink && <div className="mb-4"><Notice tone="info">Opening {platformNames[connectLink.platform] || connectLink.platform}… if nothing happens, <a className="font-bold underline" href={connectLink.url} target="_blank" rel="noreferrer">tap here to open the connection page</a>.</Notice></div>}
     <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
       <Card>
         <div className="flex items-center justify-between border-b border-[#e7eef0] px-5 py-4"><div><h2 className="font-display font-bold text-[#29495c]">Your connected identities</h2><p className="mt-1 text-xs text-[#8798a1]">Only active accounts can receive new posts.</p></div><Button variant="secondary" onClick={() => void refresh()} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button></div>

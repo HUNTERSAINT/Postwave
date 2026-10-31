@@ -268,6 +268,7 @@ export class LateProvider implements SocialProvider {
     if (parsedAuthUrl.protocol !== "https:") {
       throw new HttpError(502, "The provider returned an invalid authorization link.");
     }
+    logger.info({ connectPlatform: input.platform, connectHost: parsedAuthUrl.host, connectPath: parsedAuthUrl.pathname }, "Connect link created");
     return { authUrl: parsedAuthUrl.toString() };
   }
 
