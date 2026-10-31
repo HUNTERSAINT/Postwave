@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { PlanBanner } from "@/components/plan-banner";
+import { AiCaptionAssistant } from "@/components/ai-caption-assistant";
 
 type Account = { id: string; platform: string; username?: string; displayName?: string; isActive: boolean };
 type MediaAsset = { id: string; key?: string; publicUrl: string; contentType: string; size: number };
@@ -536,6 +537,7 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
         <Card className="p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Your message</h2><p className="mt-1 text-xs text-[#8798a1]">A shared post caption for selected platforms.</p></div><span className="text-xs font-semibold text-[#80939c]">{content.length} characters</span></div>
           <textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={5000} rows={7} placeholder="What would you like to share?" className="w-full resize-y rounded-xl border border-[#dce7eb] bg-[#fbfdfd] p-4 text-sm leading-6 text-[#29495c] outline-none placeholder:text-[#a0afb6] focus:border-[#4eabb3] focus:ring-4 focus:ring-[#dff3ef]" />
+          <AiCaptionAssistant content={content} platforms={Array.from(new Set(selectedAccounts.map((account) => String(account.platform))))} onUse={(text) => setContent(text.slice(0, 5000))} />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#8798a1]"><span>Keep your copy clear across every channel.</span><span>Up to 5,000 characters</span></div>
         </Card>
         <Card className="p-5 sm:p-6">

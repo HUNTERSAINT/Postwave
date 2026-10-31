@@ -106,6 +106,8 @@ function UserPanel({ user, onChanged, onMessage, onError }: { user: AdminUser; o
       <div className="mt-4 flex flex-wrap gap-2">
         <button disabled={busy} onClick={() => void grant(false)} className={`${button} bg-[#176f98] text-white hover:bg-[#125c7d]`}>Grant plan</button>
         {user.planSource === "admin_grant" && <button disabled={busy} onClick={() => void run(async () => { await call(`/api/admin/users/${user.id}/revoke`, {}); return `Revoked the grant for ${user.email}.`; })} className={`${button} border border-[#d8e6eb] text-[#48677a]`}>Revoke grant</button>}
+        {user.planSource === "trial" && <button disabled={busy} onClick={() => void run(async () => { await call(`/api/admin/users/${user.id}/end-trial`, {}); return `Ended the trial for ${user.email}. They are now on Free.`; })} className={`${button} border border-[#d8e6eb] text-[#48677a]`}>End trial now</button>}
+        {user.planSource === "paid" && <p className="self-center text-xs text-[#718696]">This user pays for their plan. Cancel it from their billing, or grant a different plan.</p>}
       </div>
     </div>
     <div>

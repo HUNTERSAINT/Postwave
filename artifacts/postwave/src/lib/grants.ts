@@ -293,3 +293,38 @@ export async function extendTrial(
   await getPlanSummary(db, input.userId, now);
   return outcome;
 }
+
+/** Ends a running trial immediately; the user falls back to Free. */
+export async function endTrial(
+  db: Database,
+  input: { adminId: string; userId: string },
+) {
+  const now = new Date();
+  const outcome = await db.transaction(async (tx) => {
+    const [user] = await tx
+      .select()
+      .from(users)
+      .where(eq(users.id, input.userId))
+      .for("update")
+      .limit(1);
+    if (!user) throw new HttpError(404, "User not found.");
+    if (user.planSource !== "trial") {
+      throw new HttpError(409, "This user is not on a trial.");
+    }
+    await tx
+      .update(users)
+      .set({ trialEndsAt: now, updatedAt: now })
+      .where(eq(users.id, input.userId));
+    await tx.insert(auditLog).values({
+      adminId: input.adminId,
+      userId: input.userId,
+      action: "end_trial",
+      plan: "pro",
+      duration: null,
+      note: null,
+    });
+    return { email: user.email, name: user.name };
+  });
+  await getPlanSummary(db, input.userId, now);
+  return outcome;
+}
