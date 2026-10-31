@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { PwaRegister } from "@/components/pwa-register";
+import { LaunchSplash } from "@/components/launch-splash";
 import { DM_Sans, Manrope } from "next/font/google";
 import "./globals.css";
 
@@ -19,7 +20,7 @@ export const viewport: Viewport = { themeColor: "#0d9b98" };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${dmSans.variable} ${manrope.variable}`}>
-      <body>{children}<PwaRegister /></body>
+      <body><LaunchSplash />{children}<PwaRegister /></body>
     </html>
   );
 }

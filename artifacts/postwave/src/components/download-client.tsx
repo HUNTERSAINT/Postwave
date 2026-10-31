@@ -13,7 +13,7 @@ export function DownloadClient() {
 
   useEffect(() => {
     setIsIos(/iphone|ipad|ipod/i.test(navigator.userAgent));
-    if (window.matchMedia("(display-mode: standalone)").matches) setInstalled(true);
+    if (window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || document.referrer.startsWith("android-app://")) { window.location.replace("/dashboard"); return; }
     const onPrompt = (event: Event) => { event.preventDefault(); setInstallEvent(event as InstallEvent); };
     const onInstalled = () => { setInstalled(true); setInstallEvent(null); };
     window.addEventListener("beforeinstallprompt", onPrompt);
