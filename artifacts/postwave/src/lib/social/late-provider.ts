@@ -220,6 +220,32 @@ function mapPublishResult(value: unknown): ProviderPublishResult {
   };
 }
 
+// A separate title is used by platforms that have both a title and a description.
+// YouTube and Pinterest: title goes in platformSpecificData.title, caption stays the description.
+// TikTok photo posts: title is the (90 char) headline, caption becomes the description.
+function buildPlatforms(accounts: ProviderTarget[], title: string | undefined, _content: string) {
+  const cleanTitle = title?.trim();
+  return accounts.map((account) => {
+    const entry: Record<string, unknown> = {
+      platform: account.platform,
+      accountId: account.accountId,
+    };
+    if (cleanTitle) {
+      if (account.platform === "youtube" || account.platform === "pinterest") {
+        entry.platformSpecificData = { title: cleanTitle.slice(0, account.platform === "youtube" ? 100 : 100) };
+      } else if (account.platform === "tiktok") {
+        entry.customContent = cleanTitle.slice(0, 90);
+      }
+    }
+    return entry;
+  });
+}
+
+function tiktokTitleSettings(accounts: ProviderTarget[], title: string | undefined, content: string) {
+  if (!title?.trim() || !accounts.some((account) => account.platform === "tiktok")) return {};
+  return { tiktokSettings: { description: content.slice(0, 4000) } };
+}
+
 export class LateProvider implements SocialProvider {
   async connectAccount(input: {
     profileId: string;
@@ -291,6 +317,7 @@ export class LateProvider implements SocialProvider {
 
   async publish(input: {
     profileId: string;
+    title?: string;
     content: string;
     accounts: ProviderTarget[];
     media: ProviderMedia[];
@@ -301,10 +328,8 @@ export class LateProvider implements SocialProvider {
         profileId: input.profileId,
         content: input.content,
         mediaItems: input.media,
-        platforms: input.accounts.map((account) => ({
-          platform: account.platform,
-          accountId: account.accountId,
-        })),
+        platforms: buildPlatforms(input.accounts, input.title, input.content),
+        ...tiktokTitleSettings(input.accounts, input.title, input.content),
         publishNow: true,
       },
       idempotencyKey: input.idempotencyKey,
@@ -314,6 +339,7 @@ export class LateProvider implements SocialProvider {
 
   async schedule(input: {
     profileId: string;
+    title?: string;
     content: string;
     accounts: ProviderTarget[];
     media: ProviderMedia[];
@@ -325,10 +351,8 @@ export class LateProvider implements SocialProvider {
         profileId: input.profileId,
         content: input.content,
         mediaItems: input.media,
-        platforms: input.accounts.map((account) => ({
-          platform: account.platform,
-          accountId: account.accountId,
-        })),
+        platforms: buildPlatforms(input.accounts, input.title, input.content),
+        ...tiktokTitleSettings(input.accounts, input.title, input.content),
         scheduledFor: input.scheduledFor,
       },
       idempotencyKey: input.idempotencyKey,

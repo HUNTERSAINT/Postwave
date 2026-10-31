@@ -17,7 +17,7 @@ import { AiCaptionAssistant } from "@/components/ai-caption-assistant";
 type Account = { id: string; platform: string; username?: string; displayName?: string; isActive: boolean };
 type MediaAsset = { id: string; key?: string; publicUrl: string; contentType: string; size: number };
 type Target = { platform: string; accountId: string; status: string; errorMessage?: string | null; platformPostUrl?: string | null };
-type Post = { id: string; content: string; status: string; createdAt: string; scheduledAt?: string | null; timezone?: string; platforms: Target[]; media?: MediaAsset[] };
+type Post = { id: string; title?: string | null; content: string; status: string; createdAt: string; scheduledAt?: string | null; timezone?: string; platforms: Target[]; media?: MediaAsset[] };
 type User = { id: string; email: string; name?: string; timezone?: string };
 type ApiError = { message?: string };
 
@@ -446,6 +446,7 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [accountsError, setAccountsError] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
@@ -472,6 +473,7 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
     if (!id) return;
     setDraftId(id); setDraftLoading(true); setError("");
     api<{ post: Post }>(`/api/posts/${encodeURIComponent(id)}`).then(({ post }) => {
+      setTitle(post.title || "");
       setContent(post.content || "");
       setSelected(post.platforms?.map((target) => target.accountId) || []);
       const media = post.media || [];
@@ -517,13 +519,13 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
     setBusy(true); setError(""); setNotice("");
     try {
       if (intent === "schedule" && !scheduledFor) throw new Error("Choose a date and time before scheduling.");
-      const payload: Record<string, unknown> = { intent, content, accountIds: selected, mediaAssetIds: assets.map((asset) => asset.id), timezone };
+      const payload: Record<string, unknown> = { intent, title, content, accountIds: selected, mediaAssetIds: assets.map((asset) => asset.id), timezone };
       if (draftId) payload.draftId = draftId;
       if (intent === "schedule") payload.scheduledFor = zonedInputToIso(scheduledFor, timezone);
       const saved = await api<{ postId: string; status: string }>("/api/posts", json(payload));
       if (intent === "draft") setDraftId(saved.postId);
       setNotice(intent === "draft" ? "Draft saved. Find it anytime in Drafts." : intent === "schedule" ? "Your post is scheduled." : "Your post was sent. Check History for the result on each platform.");
-      if (intent !== "draft") { setContent(""); setSelected([]); setFiles([]); setAssets([]); setDraftId(""); setScheduledFor(""); }
+      if (intent !== "draft") { setTitle(""); setContent(""); setSelected([]); setFiles([]); setAssets([]); setDraftId(""); setScheduledFor(""); }
     } catch (e) { setError(e instanceof Error ? e.message : "Couldn't publish your post."); }
     finally { setBusy(false); }
   };
@@ -536,6 +538,7 @@ function ComposePage({ savedTimezone = "Africa/Lagos" }: { savedTimezone?: strin
       <div className="grid gap-5">
         <Card className="p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between"><div><h2 className="font-display font-bold text-[#29495c]">Your message</h2><p className="mt-1 text-xs text-[#8798a1]">A shared post caption for selected platforms.</p></div><span className="text-xs font-semibold text-[#80939c]">{content.length} characters</span></div>
+          <div className="mb-4"><label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-[#5b7482]" htmlFor="post-title"><span>Title (optional)</span><span className="font-normal text-[#8798a1]">{title.length}/90</span></label><input id="post-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={90} placeholder="A short headline for platforms that have a title" className="h-11 w-full rounded-xl border border-[#dce7eb] bg-[#fbfdfd] px-4 text-sm text-[#29495c] outline-none placeholder:text-[#a0afb6] focus:border-[#4eabb3] focus:ring-4 focus:ring-[#dff3ef]" /><p className="mt-1.5 text-[11px] leading-4 text-[#8798a1]">Used as the title on TikTok photo posts, YouTube and Pinterest. The caption below is used as the description there, so the same text isn&apos;t posted twice. Other platforms only use the caption.</p></div>
           <textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={5000} rows={7} placeholder="What would you like to share?" className="w-full resize-y rounded-xl border border-[#dce7eb] bg-[#fbfdfd] p-4 text-sm leading-6 text-[#29495c] outline-none placeholder:text-[#a0afb6] focus:border-[#4eabb3] focus:ring-4 focus:ring-[#dff3ef]" />
           <AiCaptionAssistant content={content} platforms={Array.from(new Set(selectedAccounts.map((account) => String(account.platform))))} onUse={(text) => setContent(text.slice(0, 5000))} />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#8798a1]"><span>Keep your copy clear across every channel.</span><span>Up to 5,000 characters</span></div>

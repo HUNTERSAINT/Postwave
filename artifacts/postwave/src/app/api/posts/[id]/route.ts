@@ -23,6 +23,7 @@ export async function GET(
     const [post] = await db
       .select({
         id: posts.id,
+        title: posts.title,
         content: posts.content,
         status: posts.status,
         createdAt: posts.createdAt,

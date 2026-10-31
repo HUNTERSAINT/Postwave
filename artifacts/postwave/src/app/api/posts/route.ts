@@ -20,6 +20,7 @@ import { countCharacters, platformCharacterLimit } from "@/lib/social/platform-l
 const schema = z.object({
   intent: z.enum(["draft", "schedule", "publish_now"]).default("publish_now"),
   draftId: z.string().uuid().optional(),
+  title: z.string().max(150).optional(),
   content: z.string().max(5000).default(""),
   accountIds: z.array(z.string().uuid()).max(20).default([]),
   mediaAssetIds: z.array(z.string().uuid()).max(10).default([]),
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
     await enforceRateLimit(request, "posts-create-ip", 30, 60);
     const input = await parseJson(request, schema);
     const content = (input.content ?? "").trim();
+    const title = (input.title ?? "").trim() || null;
     const accountIds = input.accountIds ?? [];
     const mediaAssetIds = input.mediaAssetIds ?? [];
     const timezone = input.timezone ?? user.timezone ?? "Africa/Lagos";
@@ -293,6 +295,7 @@ export async function POST(request: Request) {
         const updated = await tx
           .update(posts)
           .set({
+            title,
             content,
             status,
             scheduledAt,
@@ -326,6 +329,7 @@ export async function POST(request: Request) {
         await tx.insert(posts).values({
           id: postId,
           userId: user.id,
+          title,
           content,
           status,
           scheduledAt,

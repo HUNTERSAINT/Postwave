@@ -221,6 +221,7 @@ export const posts = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 150 }),
     content: text("content").notNull(),
     status: postStatus("status").default("queued").notNull(),
     zernioPostId: varchar("zernio_post_id", { length: 64 }),

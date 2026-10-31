@@ -90,7 +90,7 @@ export async function processPublishJob(
     .where(eq(users.id, data.userId))
     .limit(1);
   const [post] = await db
-    .select({ id: posts.id, content: posts.content, status: posts.status })
+    .select({ id: posts.id, title: posts.title, content: posts.content, status: posts.status })
     .from(posts)
     .where(and(eq(posts.id, data.postId), eq(posts.userId, data.userId)))
     .limit(1);
@@ -156,6 +156,7 @@ export async function processPublishJob(
     const profileId = await ensureZernioProfile(user);
     const result = await lateProvider.publish({
       profileId,
+      title: post.title ?? undefined,
       content: post.content,
       accounts: targets.map((target) => ({
         accountId: target.providerAccountId,

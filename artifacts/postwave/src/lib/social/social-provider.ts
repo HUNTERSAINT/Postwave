@@ -57,6 +57,7 @@ export interface SocialProvider {
   }): Promise<{ authUrl: string }>;
   publish(input: {
     profileId: string;
+    title?: string;
     content: string;
     accounts: ProviderTarget[];
     media: ProviderMedia[];
@@ -64,6 +65,7 @@ export interface SocialProvider {
   }): Promise<ProviderPublishResult>;
   schedule(input: {
     profileId: string;
+    title?: string;
     content: string;
     accounts: ProviderTarget[];
     media: ProviderMedia[];
