@@ -70,7 +70,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
   </a>;
 }
 export function Footer() {
-  return <footer className="mt-auto border-t border-[#e2ecef] px-5 py-5 text-center text-xs text-[#8093a0]"><a className="hover:underline" href="/pricing">Pricing</a> · <a className="hover:underline" href="/privacy">Privacy</a> · <a className="hover:underline" href="/terms">Terms</a> · <a className="hover:underline" href="/data-deletion">Data deletion</a><br />Postwave by Mazi Saint Concepts</footer>;
+  return <footer className="mt-auto border-t border-[#e2ecef] px-5 py-5 text-center text-xs text-[#8093a0]"><a className="hover:underline" href="/pricing">Pricing</a> · <a className="hover:underline" href="/download">Get the app</a> · <a className="hover:underline" href="/privacy">Privacy</a> · <a className="hover:underline" href="/terms">Terms</a> · <a className="hover:underline" href="/data-deletion">Data deletion</a><br />Postwave by Mazi Saint Concepts</footer>;
 }
 export function Notice({ children, tone = "error" }: { children: ReactNode; tone?: "error" | "success" | "info" }) {
   const colors = tone === "success" ? "border-[#b9e4d9] bg-[#effaf6] text-[#246c5b]" : tone === "info" ? "border-[#cfe3eb] bg-[#f0f8fb] text-[#346a80]" : "border-[#f0c9c1] bg-[#fff5f2] text-[#a34c3d]";
