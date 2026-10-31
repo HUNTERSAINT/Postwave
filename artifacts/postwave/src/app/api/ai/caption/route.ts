@@ -3,6 +3,8 @@ import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { requireUser } from "@/lib/auth/session";
 import { errorResponse, jsonResponse, parseJson } from "@/lib/http";
 import { generateCaption } from "@/lib/ai/caption";
+import { getDatabase } from "@/lib/db";
+import { getPlanSummary } from "@/lib/plans";
 
 const schema = z.object({
   mode: z.enum(["write", "shorter", "longer", "hashtags"]),
@@ -18,7 +20,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
-    const dailyLimit = user.plan === "free" ? 10 : 100;
+    const { db } = getDatabase();
+    const summary = await getPlanSummary(db, user.id);
+    const dailyLimit = !summary || summary.plan === "free" ? 10 : 100;
     await enforceRateLimit(request, "ai-caption-minute", 6, 60, user.id);
     await enforceRateLimit(request, "ai-caption-day", dailyLimit, 24 * 60 * 60, user.id);
     const input = await parseJson(request, schema);
