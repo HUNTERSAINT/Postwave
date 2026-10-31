@@ -91,6 +91,74 @@ function cleanCaption(value: string) {
     .trim();
 }
 
+let geminiModelCache: { models: string[]; at: number } | null = null;
+
+async function geminiCandidates(apiKey: string): Promise<string[]> {
+  if (process.env.GEMINI_MODEL) return [process.env.GEMINI_MODEL];
+  if (geminiModelCache && Date.now() - geminiModelCache.at < 60 * 60 * 1000) {
+    return geminiModelCache.models;
+  }
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+    headers: { "x-goog-api-key": apiKey },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) {
+    logger.warn({ aiStatus: response.status }, "Could not list Gemini models");
+    throw new HttpError(503, "The AI assistant is unavailable right now. Please try again.");
+  }
+  const data = (await response.json()) as {
+    models?: { name?: string; supportedGenerationMethods?: string[] }[];
+  };
+  const names = (data.models ?? [])
+    .filter((model) => model.supportedGenerationMethods?.includes("generateContent"))
+    .map((model) => (model.name ?? "").replace(/^models\//, ""))
+    .filter(
+      (name) =>
+        /^gemini-[\d.]+-flash(-lite)?(-latest)?$/.test(name) ||
+        name === "gemini-flash-latest" ||
+        name === "gemini-flash-lite-latest",
+    );
+  // Prefer stable flash models; newest version first, lite after regular.
+  names.sort((a, b) => {
+    const rank = (name: string) => (name.includes("lite") ? 1 : 0);
+    if (rank(a) !== rank(b)) return rank(a) - rank(b);
+    return b.localeCompare(a, undefined, { numeric: true });
+  });
+  logger.info({ geminiModels: names.slice(0, 6) }, "Gemini models available");
+  if (!names.length) throw new HttpError(503, "The AI assistant is unavailable right now. Please try again.");
+  geminiModelCache = { models: names.slice(0, 4), at: Date.now() };
+  return geminiModelCache.models;
+}
+
+async function callGemini(apiKey: string, system: string, user: string): Promise<Response> {
+  const models = await geminiCandidates(apiKey);
+  let last: Response | undefined;
+  for (const model of models) {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: [{ role: "user", parts: [{ text: user }] }],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 2000,
+            responseMimeType: "application/json",
+          },
+        }),
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+    if (response.ok) return response;
+    logger.warn({ aiStatus: response.status, aiModel: model }, "Gemini model request failed");
+    last = response;
+    if (response.status !== 404 && response.status !== 429 && response.status !== 400) break;
+  }
+  return last as Response;
+}
+
 async function callModel(system: string, user: string): Promise<string> {
   const geminiKey = process.env.GEMINI_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -101,25 +169,7 @@ async function callModel(system: string, user: string): Promise<string> {
   let response: Response;
   try {
     if (geminiKey) {
-      const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json", "x-goog-api-key": geminiKey },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: system }] },
-            contents: [{ role: "user", parts: [{ text: user }] }],
-            generationConfig: {
-              temperature: 0.9,
-              maxOutputTokens: 1000,
-              responseMimeType: "application/json",
-              thinkingConfig: { thinkingBudget: 0 },
-            },
-          }),
-          signal: AbortSignal.timeout(30_000),
-        },
-      );
+      response = await callGemini(geminiKey, system, user);
     } else {
       response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
