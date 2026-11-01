@@ -1,0 +1,44 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["mobile/**", ".github/workflows/mobile-apk.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install dependencies
+        run: yarn install --no-lockfile
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Build release APK
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Collect APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk postwave.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: postwave-apk
+          path: mobile/postwave.apk
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "mobile-${{ github.run_number }}" postwave.apk --title "Postwave Android build ${{ github.run_number }}" --notes "Sideload this APK on Android." --repo "${{ github.repository }}"
