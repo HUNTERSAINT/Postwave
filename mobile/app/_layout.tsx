@@ -6,6 +6,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { Launch } from "../components/launch";
+import { LaunchContext } from "../lib/launch";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -31,7 +32,9 @@ export default function Root() {
       <AuthProvider>
         <View style={{ flex: 1 }}>
           <StatusBar style="dark" />
-          <Gate />
+          <LaunchContext.Provider value={!launching}>
+            <Gate />
+          </LaunchContext.Provider>
           {launching ? <Launch onDone={done} /> : null}
         </View>
       </AuthProvider>

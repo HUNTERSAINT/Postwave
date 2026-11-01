@@ -2,6 +2,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { Link } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import { FadeIn } from "../../components/fade-in";
 import { Screen, Card, H1, Muted, Field, Button, ErrorText } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
 import { API_URL } from "../../lib/api";
@@ -22,8 +23,11 @@ export default function Login() {
     <Screen>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 48 }} keyboardShouldPersistTaps="handled">
-          <Text style={{ fontSize: 34, fontWeight: "800", color: C.brandDark }}>Postwave</Text>
-          <Muted style={{ marginBottom: 24 }}>One post. Every platform.</Muted>
+          <FadeIn>
+            <Text style={{ fontSize: 34, fontWeight: "800", color: C.brandDark }}>Postwave</Text>
+            <Muted style={{ marginBottom: 24 }}>One post. Every platform.</Muted>
+          </FadeIn>
+          <FadeIn delay={180}>
           <Card>
             <H1>Sign in</H1>
             <ErrorText>{error}</ErrorText>
@@ -33,7 +37,10 @@ export default function Login() {
             <View style={{ height: 8 }} />
             <Button title="Forgot password?" kind="ghost" onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/forgot-password`)} />
           </Card>
-          <Link href="/signup" style={{ color: C.brandDark, textAlign: "center", fontWeight: "700", marginTop: 8 }}>New here? Create an account</Link>
+          </FadeIn>
+          <FadeIn delay={360}>
+            <Link href="/signup" style={{ color: C.brandDark, textAlign: "center", fontWeight: "700", marginTop: 8 }}>New here? Create an account</Link>
+          </FadeIn>
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

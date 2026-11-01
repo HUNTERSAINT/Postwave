@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ScrollView } from "react-native";
 import { Link } from "expo-router";
+import { FadeIn } from "../../components/fade-in";
 import { Screen, Card, H1, Muted, Field, Button, ErrorText } from "../../components/ui";
 import { api } from "../../lib/api";
 import { C } from "../../lib/theme";
@@ -23,6 +24,7 @@ export default function Signup() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 40 }} keyboardShouldPersistTaps="handled">
+        <FadeIn>
         <Card>
           <H1>Create account</H1>
           {sent ? (
@@ -41,6 +43,7 @@ export default function Signup() {
             </>
           )}
         </Card>
+        </FadeIn>
         {!sent && <Link href="/login" style={{ color: C.brandDark, textAlign: "center", fontWeight: "700" }}>Already have an account? Sign in</Link>}
       </ScrollView>
     </Screen>
