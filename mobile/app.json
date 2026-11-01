@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Postwave",
+    "slug": "postwave",
+    "scheme": "postwave",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": { "image": "./assets/splash.png", "resizeMode": "contain", "backgroundColor": "#effaf8" },
+    "android": {
+      "package": "com.mazisaint.postwave",
+      "versionCode": 1,
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#0d9b98" },
+      "permissions": ["READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      ["expo-image-picker", { "photosPermission": "Postwave needs your photos and videos so you can post them." }]
+    ],
+    "experiments": { "typedRoutes": false },
+    "extra": { "apiUrl": "https://web-production-be509.up.railway.app" }
+  }
+}

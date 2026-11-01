@@ -43,9 +43,11 @@ export async function POST(request: Request) {
       throw new HttpError(403, "Verify your email before signing in.");
     }
 
-    await createSession(user.id);
+    const mobile = request.headers.get("x-postwave-client") === "mobile";
+    const token = await createSession(user.id, { setCookie: !mobile });
     return jsonResponse({
       user: { id: user.id, email: user.email, name: user.name },
+      ...(mobile ? { token } : {}),
     });
   } catch (error) {
     return errorResponse(error);

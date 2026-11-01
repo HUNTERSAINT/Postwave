@@ -1,6 +1,6 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { authSessions, users } from "@/db/schema";
 import { getDatabase } from "@/lib/db";
 import { HttpError } from "@/lib/http";
@@ -23,26 +23,42 @@ export function hashAuthToken(value: string) {
   return createHmac("sha256", authSecret()).update(value).digest("hex");
 }
 
-export async function createSession(userId: string) {
+export async function createSession(
+  userId: string,
+  options: { setCookie?: boolean } = {},
+) {
+  const setCookie = options.setCookie ?? true;
   const rawToken = randomBytes(32).toString("base64url");
   const tokenHash = hashAuthToken(rawToken);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   const { db } = getDatabase();
 
   await db.insert(authSessions).values({ tokenHash, userId, expiresAt });
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, rawToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
+  if (setCookie) {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE, rawToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: expiresAt,
+    });
+  }
+  return rawToken;
+}
+
+/** Session token from the cookie (web) or an Authorization bearer header (native app). */
+async function readSessionToken() {
+  const bearer = (await headers()).get("authorization");
+  if (bearer && /^Bearer\s+/i.test(bearer)) {
+    return bearer.replace(/^Bearer\s+/i, "").trim() || undefined;
+  }
+  return (await cookies()).get(SESSION_COOKIE)?.value;
 }
 
 export async function destroySession() {
   const cookieStore = await cookies();
-  const rawToken = cookieStore.get(SESSION_COOKIE)?.value;
+  const rawToken = await readSessionToken();
   if (rawToken) {
     const { db } = getDatabase();
     await db.delete(authSessions).where(eq(authSessions.tokenHash, hashAuthToken(rawToken)));
@@ -51,7 +67,7 @@ export async function destroySession() {
 }
 
 export async function getCurrentUser() {
-  const rawToken = (await cookies()).get(SESSION_COOKIE)?.value;
+  const rawToken = await readSessionToken();
   if (!rawToken) return null;
 
   const { db } = getDatabase();
