@@ -40,6 +40,7 @@ export default function Login() {
           </FadeIn>
           <FadeIn delay={360}>
             <Link href="/signup" style={{ color: C.brandDark, textAlign: "center", fontWeight: "700", marginTop: 8 }}>New here? Create an account</Link>
+            <Muted style={{ textAlign: "center", marginTop: 28, fontSize: 12 }}>© {new Date().getFullYear()} Mazi Saint Concepts. All rights reserved.</Muted>
           </FadeIn>
         </ScrollView>
       </KeyboardAvoidingView>
