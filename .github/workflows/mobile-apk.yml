@@ -34,7 +34,7 @@ jobs:
         run: ./gradlew assembleRelease --no-daemon
       - name: Collect APK
         run: cp android/app/build/outputs/apk/release/app-release.apk postwave.apk
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: postwave-apk
           path: mobile/postwave.apk
